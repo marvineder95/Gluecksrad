@@ -1,0 +1,22 @@
+# Datenbanken
+database/*.sqlite
+database/*.sqlite-journal
+
+# Uploads (nur .htaccess behalten)
+backend/uploads/*
+!backend/uploads/.htaccess
+
+# Tests
+backend/tests/
+
+# Python venv
+venv/
+.env
+
+# Logs & Temp
+*.log
+.DS_Store
+node_modules/
+
+# Playwright logs
+.playwright-mcp/

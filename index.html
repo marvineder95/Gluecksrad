@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#C8A866">
+    <title>Glücksrad</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="doveLogo.png">
+    <link rel="apple-touch-icon" href="doveLogo.png">
+    <link rel="stylesheet" href="frontend/css/style.css?v=31">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <component :is="currentComponent"></component>
+    </div>
+
+    <!-- Templates -->
+    <template id="wheel-template">
+        <svg ref="svgRef" class="wheel-svg" :style="wheelStyle">
+            <defs>
+                <!-- Drop shadow for segments -->
+                <filter id="segShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="rgba(0,0,0,0.08)"/>
+                </filter>
+                <!-- Product image floating shadow -->
+                <filter id="productShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="rgba(0,0,0,0.18)"/>
+                    <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.1)"/>
+                </filter>
+                <!-- Gold rim gradients -->
+                <linearGradient id="goldRim1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#F0E2B8"/>
+                    <stop offset="25%" stop-color="#D4B87A"/>
+                    <stop offset="50%" stop-color="#C8A866"/>
+                    <stop offset="75%" stop-color="#E0CC90"/>
+                    <stop offset="100%" stop-color="#B89850"/>
+                </linearGradient>
+                <linearGradient id="goldRim2" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#E8D5A3"/>
+                    <stop offset="50%" stop-color="#F5ECD0"/>
+                    <stop offset="100%" stop-color="#A68B4B"/>
+                </linearGradient>
+                <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="60%" stop-color="rgba(255,255,255,0.6)"/>
+                    <stop offset="100%" stop-color="rgba(200,168,102,0.15)"/>
+                </radialGradient>
+                <!-- Clip paths for each segment -->
+                <clipPath v-for="clip in clipPaths" :key="clip.id" :id="clip.id">
+                    <path :d="clip.path" fill="white" />
+                </clipPath>
+                <!-- Curved text paths along outer edge -->
+                <path v-for="tp in textPaths" :key="tp.id" :id="tp.id" :d="tp.d" fill="none" />
+            </defs>
+
+            <!-- === OUTER PREMIUM RIM === -->
+            <circle :cx="center" :cy="center" :r="radius + 14" fill="none" stroke="url(#goldRim1)" stroke-width="5" opacity="0.95"/>
+            <circle :cx="center" :cy="center" :r="radius + 10" fill="none" stroke="url(#goldRim2)" stroke-width="2" opacity="0.8"/>
+            <circle :cx="center" :cy="center" :r="radius + 7" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+
+            <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
+            <g v-if="segmentPaths.length > 0" filter="url(#segShadow)">
+                <g v-for="(segment, index) in segmentPaths" :key="'seg-' + index">
+                    <!-- Background image clipped to wedge shape -->
+                    <g :clip-path="'url(#clip-' + index + ')'">
+                        <image :href="segment.theme.image"
+                               :x="center - radius" :y="center - radius"
+                               :width="radius * 2" :height="radius * 2"
+                               preserveAspectRatio="xMidYMid slice"/>
+                        <!-- Overlay for text readability -->
+                        <path :d="segment.path" :fill="segment.theme.overlay" style="pointer-events: none;"/>
+
+                        <!-- === SEGMENT TITLES (curved along outer edge) === -->
+                        <text :fill="segment.theme.textColor"
+                            :font-size="segment.fontSize"
+                            font-weight="700"
+                            font-family="Montserrat, sans-serif"
+                            style="text-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);">
+                            <textPath :href="'#' + textPaths[index].id"
+                                startOffset="50%"
+                                text-anchor="middle">
+                                {{ segment.name }}
+                            </textPath>
+                        </text>
+
+                        <!-- === PRODUCT IMAGES (clipped to wedge) -->
+                        <g v-if="segment.image" style="pointer-events: none;">
+                            <image :x="segment.imageX - segment.imageSize / 2"
+                                   :y="segment.imageY - segment.imageSize / 2"
+                                   :width="segment.imageSize"
+                                   :height="segment.imageSize"
+                                   :href="segment.image"
+                                   filter="url(#productShadow)"
+                                   preserveAspectRatio="xMidYMid meet"/>
+                        </g>
+                    </g>
+                    <!-- Subtle white separator stroke (NOT clipped, drawn on top of adjacent segments) -->
+                    <path :d="segment.path" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" style="pointer-events: none;"/>
+                </g>
+            </g>
+
+            <!-- === EMPTY STATE: No segments === -->
+            <g v-else filter="url(#segShadow)">
+                <circle :cx="center" :cy="center" :r="radius" fill="#F8F4EC" stroke="none"/>
+                <circle :cx="center" :cy="center" :r="radius" fill="url(#goldRim1)" opacity="0.08"/>
+                <!-- Curved text path in upper half of wheel -->
+                <path :id="'emptyArc-' + (segments ? segments.length : 0)"
+                      :d="'M ' + (center - radius * 0.62) + ' ' + (center - radius * 0.35) +
+                          ' A ' + (radius * 0.72) + ' ' + (radius * 0.72) +
+                          ' 0 0 1 ' + (center + radius * 0.62) + ' ' + (center - radius * 0.35)"
+                      fill="none"/>
+                <text text-anchor="middle"
+                      :font-size="Math.max(15, radius * 0.048)"
+                      font-weight="600"
+                      font-family="Montserrat, sans-serif"
+                      fill="#8B7355">
+                    <textPath :href="'#emptyArc-' + (segments ? segments.length : 0)"
+                              startOffset="50%">
+                        ✨  Fang an, dein Rad zu gestalten  ✨
+                    </textPath>
+                </text>
+            </g>
+
+            <!-- === SEGMENT DIVIDERS (subtle gold lines between segments) === -->
+            <g v-if="segmentPaths.length > 0" v-for="(segment, index) in segmentPaths" :key="'div'+index" style="pointer-events: none;">
+                <line :x1="center" :y1="center"
+                      :x2="center + radius * Math.cos((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
+                      :y2="center + radius * Math.sin((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
+                      stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+            </g>
+
+            <!-- === INNER RIM === -->
+            <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" stroke="url(#goldRim1)" stroke-width="3" opacity="0.9"/>
+            <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" stroke="url(#goldRim2)" stroke-width="1.5" opacity="0.7"/>
+            <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
+        </svg>
+    </template>
+
+    <template id="event-template">
+        <div class="event-page">
+            <div class="event-bg-image" :style="bgStyle"></div>
+
+            <!-- Decorative elements -->
+            <div class="feather-decor feather-decor-1"></div>
+            <div class="feather-decor feather-decor-2"></div>
+            <div class="feather-decor feather-decor-3"></div>
+
+            <div class="event-header">
+                <div class="logo-wrapper">
+                    <img :src="logoUrl" class="logo-taube-img" alt="Logo">
+                </div>
+                <div class="gold-line"></div>
+            </div>
+
+            <div class="wheel-area" ref="wheelAreaRef">
+                <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
+                    <div class="wheel-marker">
+                        <svg viewBox="0 0 50 60">
+                            <defs>
+                                <linearGradient id="markerGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#E8D5A3"/>
+                                    <stop offset="50%" stop-color="#C8A866"/>
+                                    <stop offset="100%" stop-color="#A68B4B"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M25 58 L6 18 Q6 2 25 2 Q44 2 44 18 Z" fill="url(#markerGrad2)" stroke="#A68B4B" stroke-width="1.5"/>
+                            <circle cx="25" cy="16" r="7" fill="#fff" stroke="#C8A866" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"></wheel-component>
+                    <div class="wheel-center">
+                        <img :src="logoUrl" alt="Logo" class="center-taube">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kampagne abgeschlossen Overlay -->
+            <div v-if="campaignEnded" class="campaign-ended-overlay">
+                <div class="campaign-ended-content">
+                    <div class="campaign-ended-icon">🏆</div>
+                    <h2>Kampagne abgeschlossen</h2>
+                    <p>Alle Gewinne wurden vergeben.</p>
+                    <p class="campaign-ended-sub">Vielen Dank für Ihre Teilnahme!</p>
+                    <p class="campaign-ended-hint">Erstelle eine neue Kampagne oder erhöhe die Anzahl der zu drehenden Segmente im Admin-Panel.</p>
+                    <button class="campaign-admin-btn" @click="navigateTo('#/admin')">Zum Admin-Panel</button>
+                </div>
+            </div>
+
+            <div class="spin-area" v-else>
+                <button class="spin-button" @click="spin" :disabled="spinning || showWin">
+                    {{ spinning ? 'Dreht...' : 'DREHEN' }}
+                </button>
+                <div class="spin-hint">Buzzer drücken zum drehen</div>
+            </div>
+
+            <!-- Secret Admin Corner -->
+            <div class="secret-corner" @click="handleSecretClick"></div>
+
+            <div v-if="showWin" class="win-overlay" @click.self="nextRound">
+                <div class="win-content">
+                    <div class="win-badge">GEWONNEN!</div>
+                    <img v-if="winner?.image" :src="winner.image" class="win-image" alt="">
+                    <div class="win-name">{{ winner?.name }}</div>
+                    <div class="win-text">{{ winner?.win_text || 'Herzlichen Glückwunsch!' }}</div>
+                    <button class="next-round-btn" @click="nextRound">NÄCHSTE RUNDE</button>
+                </div>
+            </div>
+
+            <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
+        </div>
+    </template>
+
+    <template id="login-template">
+        <div class="login-page">
+            <div class="login-card">
+                <div class="login-logo-wrap">
+                    <img :src="logoUrl" alt="Logo">
+                </div>
+                <h2>Admin Login</h2>
+                <p class="login-subtitle">Glücksrad Verwaltung</p>
+                <form @submit.prevent="login">
+                    <div class="login-field">
+                        <label>Benutzername</label>
+                        <div class="login-input-wrap">
+                            <svg class="login-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <input type="text" v-model="username" required placeholder="admin">
+                        </div>
+                    </div>
+                    <div class="login-field">
+                        <label>Passwort</label>
+                        <div class="login-input-wrap">
+                            <svg class="login-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <input :type="showPassword ? 'text' : 'password'" v-model="password" required placeholder="Passwort">
+                            <button type="button" class="login-eye-btn" @click="togglePassword" tabindex="-1">
+                                <svg v-if="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.57m-3.47 3.47L3 3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div v-if="error" class="login-error">{{ error }}</div>
+                    <button type="submit" class="login-submit-btn">Anmelden</button>
+                </form>
+                <div class="login-footer">
+                    <p>Willkommen zurück!</p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="admin-template">
+        <div class="admin-page" v-if="isAuthenticated">
+            <!-- Sticky Header -->
+            <header class="admin-header-bar">
+                <div class="admin-header-inner">
+                    <div class="admin-header-left">
+                        <img :src="formSettings.logo || 'doveLogo.png'" class="admin-header-logo" alt="Logo">
+                        <div class="admin-header-title">
+                            <h1>{{ formSettings.wheel_title || 'Glücksrad' }}</h1>
+                            <span>Event Management</span>
+                        </div>
+                    </div>
+                    <div class="admin-header-actions">
+                        <button class="btn-gold" @click="saveAll">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            Speichern
+                        </button>
+                        <button class="btn-ghost" @click="showQrModal = true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            <span>QR-Code</span>
+                        </button>
+                        <button class="btn-ghost" @click="openPasswordModal">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span>Passwort</span>
+                        </button>
+                        <button class="btn-ghost" @click="goToWebsite">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            <span>Zur Webseite</span>
+                        </button>
+                        <button class="btn-ghost danger" @click="logout">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                            <span>Abmelden</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="admin-container">
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon blue">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </div>
+                            <span class="kpi-label">Gesamt<br>Drehungen</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.total_spins_limit) }}</div>
+                        <div class="kpi-desc">Automatisch aus Kontingenten</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon green">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <span class="kpi-label">Bereits<br>gedreht</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.total_spins) }}</div>
+                        <div class="kpi-desc">Drehungen erfolgt</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon gold">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                            </div>
+                            <span class="kpi-label">Verbleibend</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.remaining_spins) }}</div>
+                        <div class="kpi-desc">Drehungen offen</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon purple">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            </div>
+                            <span class="kpi-label">Aktive<br>Segmente</span>
+                        </div>
+                        <div class="kpi-value">{{ stats.active_segments }}</div>
+                        <div class="kpi-desc">Segmente im Rad</div>
+                    </div>
+                    <!-- 5. KPI: Kampagne zurücksetzen -->
+                    <div class="kpi-card kpi-reset" @click="showResetModal = true" style="cursor: pointer;">
+                        <div class="kpi-header">
+                            <div class="kpi-icon red">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </div>
+                            <span class="kpi-label">Kampagne<br>zurücksetzen</span>
+                        </div>
+                        <div class="kpi-value" style="font-size: 1.2rem; margin-top: 4px;">
+                            <span class="kpi-reset-text">Alle Daten löschen</span>
+                        </div>
+                        <div class="kpi-desc">Segmente, Spins & Pool</div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="admin-main-content">
+                    <!-- Left: Live Preview -->
+                    <div class="admin-left-col">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <h2>Live Vorschau</h2>
+                                <p>So wird das Glücksrad angezeigt</p>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="preview-area">
+                                    <wheel-component :segments="segments" :rotation="previewRotation" :size="400"></wheel-component>
+                                </div>
+                                <button class="btn-test" @click="testSpin" :disabled="testSpinning">
+                                    <span v-if="testSpinning">Dreht...</span>
+                                    <span v-else>Test-Drehung starten</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                                </button>
+                                <div class="preview-hint">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                    Hinweis: Die Darstellung kann je nach Bildschirm leicht variieren.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Campaign + Segments -->
+                    <div class="admin-right-col">
+                        <!-- Segments Card -->
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <div class="section-header-row">
+                                    <div>
+                                        <h2>Segmente</h2>
+                                        <p>Gewinne und Verteilung in dieser Kampagne</p>
+                                    </div>
+                                    <button class="btn-add" @click="openSegmentModal()">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Segment hinzufügen
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="admin-card-body" style="padding: 0;">
+                                <div class="segment-table-wrap">
+                                    <table class="segment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Segment</th>
+                                                <th>Anzahl in Kampagne</th>
+                                                <th>Vergeben</th>
+                                                <th>Verbleibend</th>
+                                                <th>Theme</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(segment, idx) in segmentStats" :key="segment.id"
+                                                draggable="true"
+                                                :class="{ dragging: draggedIndex === idx, 'drag-over': dragOverIndex === idx && draggedIndex !== idx }"
+                                                @dragstart="onDragStart($event, idx)"
+                                                @dragover="onDragOver($event, idx)"
+                                                @dragleave="onDragLeave"
+                                                @dragend="onDragEnd"
+                                                @drop="onDrop($event, idx)"
+                                                style="cursor: grab;">
+                                                <td class="num">{{ idx + 1 }}</td>
+                                                <td class="seg-name">{{ segment.name }}</td>
+                                                <td>{{ segment.max_count }}</td>
+                                                <td>{{ segment.used_count }}</td>
+                                                <td>{{ segment.remaining }}</td>
+                                                <td>
+                                                    <div class="seg-theme-preview">
+                                                        <img :src="getThemeImage(segment.theme)" alt="">
+                                                        <span class="seg-theme">{{ getThemeName(segment.theme) }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="actions">
+                                                    <button class="btn-icon" @click="openSegmentModal(segment)" title="Bearbeiten">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    </button>
+                                                    <button class="btn-icon danger" @click="deleteSegment(segment.id)" title="Löschen">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="segment-table-footer">
+                                        <span>Summe</span>
+                                        <span>{{ totalMaxCount }}</span>
+                                        <span>{{ totalUsedCount }}</span>
+                                        <span>{{ totalRemaining }}</span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Drehverlauf -->
+                            <div class="admin-card" style="margin-bottom: 20px;">
+                                <div class="admin-card-header">
+                                    <h2>Drehverlauf</h2>
+                                    <p>Alle bisherigen Drehungen dieser Kampagne</p>
+                                </div>
+                                <div class="admin-card-body" style="padding: 0;">
+                                    <div class="spin-history-wrap">
+                                        <table class="spin-history-table" v-if="formattedSpins.length > 0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Segment</th>
+                                                    <th>Datum</th>
+                                                    <th>Uhrzeit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(spin, idx) in formattedSpins" :key="idx">
+                                                    <td class="num">{{ idx + 1 }}</td>
+                                                    <td class="spin-name">{{ spin.segment_name }}</td>
+                                                    <td class="spin-date">{{ spin.date }}</td>
+                                                    <td class="spin-time">{{ spin.time }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div v-else class="spin-history-empty">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            <p>Noch keine Drehungen vorhanden</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branding Section -->
+                <div class="admin-card" style="margin-bottom: 32px;">
+                    <div class="admin-card-header">
+                        <h2>Branding</h2>
+                        <p>Anpassen von Design, Logo und Farben</p>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="branding-grid">
+                            <!-- Logo Upload -->
+                            <div class="branding-item">
+                                <label>Logo</label>
+                                <div class="upload-zone" @click="$refs.logoInput.click()">
+                                    <img v-if="formSettings.logo" :src="formSettings.logo" class="upload-preview" alt="Logo">
+                                    <div v-else>
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                        <div class="upload-label">Logo hochladen</div>
+                                    </div>
+                                    <input type="file" ref="logoInput" @change="onLogoChange" accept="image/*" style="display: none;">
+                                </div>
+                                <button v-if="formSettings.logo" class="upload-btn" @click="$refs.logoInput.click()">Logo ändern</button>
+                            </div>
+
+                            <!-- Theme Selection -->
+                            <div class="branding-item" style="grid-column: 1 / -1;">
+                                <label>Hintergrund-Theme</label>
+                                <div class="theme-grid">
+                                    <div v-for="theme in themes" :key="theme.id"
+                                         :class="['theme-card', { active: formSettings.theme === theme.id }]"
+                                         @click="formSettings.theme = theme.id">
+                                        <img :src="theme.image" :alt="theme.name">
+                                        <div class="theme-name">{{ theme.name }}</div>
+                                    </div>
+                                    <div :class="['theme-card', { active: formSettings.theme === 'custom' }]"
+                                         @click="formSettings.theme = 'custom'">
+                                        <div class="theme-card-custom">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                        </div>
+                                        <div class="theme-name">Eigenes Bild</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Background Upload -->
+                            <div v-if="formSettings.theme === 'custom'" class="branding-item">
+                                <label>Eigenes Hintergrundbild</label>
+                                <div class="upload-zone" @click="$refs.bgInput.click()">
+                                    <img v-if="formSettings.background_image" :src="formSettings.background_image" class="upload-preview" alt="Hintergrund">
+                                    <div v-else>
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                        <div class="upload-label">Bild hochladen</div>
+                                    </div>
+                                    <input type="file" ref="bgInput" @change="onBgChange" accept="image/*" style="display: none;">
+                                </div>
+                                <button v-if="formSettings.background_image" class="upload-btn" @click="$refs.bgInput.click()">Bild ändern</button>
+                            </div>
+
+                            <!-- Primary Color -->
+                            <div class="branding-item">
+                                <label>Primärfarbe</label>
+                                <div class="color-input-wrap">
+                                    <span class="color-preview" :style="{ background: formSettings.primary_color }"></span>
+                                    <input type="text" class="admin-input" v-model="formSettings.primary_color">
+                                </div>
+                            </div>
+
+                            <!-- Secondary Color -->
+                            <div class="branding-item">
+                                <label>Sekundärfarbe</label>
+                                <div class="color-input-wrap">
+                                    <span class="color-preview" :style="{ background: formSettings.secondary_color }"></span>
+                                    <input type="text" class="admin-input" v-model="formSettings.secondary_color">
+                                </div>
+                            </div>
+
+                            <!-- Accent Color -->
+                            <div class="branding-item">
+                                <label>Akzentfarbe</label>
+                                <div class="color-input-wrap">
+                                    <span class="color-preview" :style="{ background: formSettings.accent_color }"></span>
+                                    <input type="text" class="admin-input" v-model="formSettings.accent_color">
+                                </div>
+                            </div>
+
+                            <!-- Font -->
+                            <div class="branding-item">
+                                <label>Schriftart</label>
+                                <select class="admin-select" v-model="formSettings.font_family">
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Inter">Inter</option>
+                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Roboto">Roboto</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                </select>
+                            </div>
+
+                            <!-- Font Preview -->
+                            <div class="branding-item">
+                                <label>Vorschau</label>
+                                <div class="font-preview" :style="{ fontFamily: formSettings.font_family }">Aa</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer hint -->
+                <div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; color: #94A3B8; font-size: 0.8rem;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Alle Änderungen werden automatisch gespeichert, wenn Sie auf "Speichern" klicken.
+                </div>
+            </div>
+
+            <!-- Segment Modal -->
+            <div v-if="showSegmentModal" class="modal-overlay" @click.self="showSegmentModal = false">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>{{ editingSegment ? 'Segment bearbeiten' : 'Neues Segment' }}</h3>
+                        <button class="modal-close" @click="showSegmentModal = false">&times;</button>
+                    </div>
+                    <form @submit.prevent="saveSegment">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="admin-form-group">
+                                <label>Name</label>
+                                <input type="text" class="admin-input" :class="{ error: segmentFormErrors.name }" v-model="segmentForm.name" required>
+                                <span v-if="segmentFormErrors.name" class="form-error">{{ segmentFormErrors.name }}</span>
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Theme</label>
+                                <div class="theme-dropdown" v-click-outside="() => showThemeDropdown = false">
+                                    <button type="button" class="theme-dropdown-trigger" @click="showThemeDropdown = !showThemeDropdown">
+                                        <img :src="SEGMENT_THEMES[segmentForm.theme]?.image" class="theme-thumb" alt="">
+                                        <span>{{ SEGMENT_THEMES[segmentForm.theme]?.name }}</span>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <div class="theme-dropdown-menu" v-show="showThemeDropdown">
+                                        <div v-for="t in segmentThemes" :key="t.id" 
+                                             class="theme-dropdown-item" 
+                                             :class="{ active: segmentForm.theme === t.id }"
+                                             @click="segmentForm.theme = t.id; showThemeDropdown = false">
+                                            <img :src="t.image" class="theme-thumb" alt="">
+                                            <span>{{ t.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="admin-form-group">
+                            <label>Gewinntext</label>
+                            <textarea class="admin-input" v-model="segmentForm.win_text" rows="2" style="resize: vertical;"></textarea>
+                        </div>
+                        <div class="modal-form-row">
+                            <div class="admin-form-group">
+                                <label>Anzahl in Kampagne *</label>
+                                <input type="number" class="admin-input" :class="{ error: segmentFormErrors.max_count }" v-model.number="segmentForm.max_count" min="1" required>
+                                <span v-if="segmentFormErrors.max_count" class="form-error">{{ segmentFormErrors.max_count }}</span>
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Reihenfolge</label>
+                                <input type="number" class="admin-input" :class="{ error: segmentFormErrors.sort_order }" v-model.number="segmentForm.sort_order" min="0">
+                                <span v-if="segmentFormErrors.sort_order" class="form-error">{{ segmentFormErrors.sort_order }}</span>
+                            </div>
+                        </div>
+                        <div class="admin-form-group">
+                            <label>Produktbild (optional)</label>
+                            <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 6px;">💡 Quadratisches Bild (1:1) empfohlen für beste Darstellung</div>
+                            <div class="upload-zone" @click="$refs.segmentImageInput.click()" style="padding: 16px;">
+                                <img v-if="segmentForm.image" :src="segmentForm.image" class="upload-preview" style="max-height: 80px;" alt="Produktbild">
+                                <div v-else>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <div class="upload-label">Produktbild hochladen</div>
+                                </div>
+                                <input type="file" ref="segmentImageInput" @change="onSegmentImageChange" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="bg-removal-toggle" title="Diese Funktion benötigt Python + rembg auf dem Server. Auf diesem Hosting ist sie nicht verfügbar – bitte Bilder mit transparentem Hintergrund (PNG) hochladen.">
+                                <input type="checkbox" id="removeBgToggle" v-model="segmentForm.removeBg" disabled>
+                                <label for="removeBgToggle" class="bg-removal-label" style="opacity: 0.6; cursor: not-allowed;">
+                                    <span class="bg-removal-switch"></span>
+                                    <span class="bg-removal-text">Hintergrund automatisch entfernen (nicht verfügbar)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
+                            <button type="button" class="btn-ghost" @click="showSegmentModal = false">Abbrechen</button>
+                            <button type="submit" class="btn-gold">Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- QR-Code Modal -->
+            <div v-if="showQrModal" class="modal-overlay" @click.self="showQrModal = false">
+                <div class="modal-content" style="max-width: 360px; text-align: center;">
+                    <div class="modal-header">
+                        <h3>QR-Code zur Event-Seite</h3>
+                        <button class="modal-close" @click="showQrModal = false">&times;</button>
+                    </div>
+                    <img :src="qrCodeUrl" alt="QR-Code" style="width: 200px; height: 200px; margin: 10px auto; display: block;">
+                    <p style="color: #64748B; font-size: 0.85rem; margin-bottom: 16px;">Scanne den Code, um direkt zur Event-Seite zu gelangen.</p>
+                    <button class="btn-ghost" @click="showQrModal = false" style="width: 100%;">Schließen</button>
+                </div>
+            </div>
+
+            <!-- Passwort ändern Modal -->
+            <div v-if="showPasswordModal" class="modal-overlay" @click.self="showPasswordModal = false">
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="modal-header">
+                        <h3>Passwort ändern</h3>
+                        <button class="modal-close" @click="showPasswordModal = false">&times;</button>
+                    </div>
+                    <form @submit.prevent="changePassword">
+                        <div class="admin-form-group">
+                            <label>Aktuelles Passwort</label>
+                            <input type="password" class="admin-input" v-model="passwordForm.current" required>
+                        </div>
+                        <div class="admin-form-group">
+                            <label>Neues Passwort</label>
+                            <input type="password" class="admin-input" v-model="passwordForm.new" required minlength="4">
+                        </div>
+                        <div class="admin-form-group">
+                            <label>Passwort wiederholen</label>
+                            <input type="password" class="admin-input" v-model="passwordForm.confirm" required>
+                        </div>
+                        <div v-if="passwordError" class="form-error" style="margin-bottom: 12px;">{{ passwordError }}</div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button type="button" class="btn-ghost" @click="showPasswordModal = false">Abbrechen</button>
+                            <button type="submit" class="btn-gold">Speichern</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Kampagne zurücksetzen Modal -->
+            <div v-if="showResetModal" class="modal-overlay" @click.self="showResetModal = false">
+                <div class="modal-content" style="max-width: 420px;">
+                    <div class="modal-header" style="border-bottom-color: #EF4444;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #FEF2F2; display: flex; align-items: center; justify-content: center;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                            </div>
+                            <h3>Kampagne zurücksetzen</h3>
+                        </div>
+                        <button class="modal-close" @click="showResetModal = false">&times;</button>
+                    </div>
+                    <div style="padding: 20px 0;">
+                        <p style="color: #334155; font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px;">
+                            Bist du sicher, dass du die Kampagne zurücksetzen möchtest?
+                        </p>
+                        <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                            <p style="color: #991B1B; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Folgende Daten werden unwiderruflich gelöscht:</p>
+                            <ul style="color: #7F1D1D; font-size: 0.82rem; line-height: 1.7; margin: 0; padding-left: 18px;">
+                                <li>Alle Segmente</li>
+                                <li>Alle bisherigen Drehungen</li>
+                                <li>Der gesamte Pool</li>
+                            </ul>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button type="button" class="btn-ghost" @click="showResetModal = false">Abbrechen</button>
+                            <button type="button" class="btn-danger" @click="resetCampaign" :disabled="resetting">
+                                <span v-if="resetting">Wird gelöscht...</span>
+                                <span v-else>Ja, Kampagne zurücksetzen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toasts -->
+            <div class="toast-container">
+                <div v-for="toast in toasts" :key="toast.id" :class="['toast', toast.type]">
+                    {{ toast.msg }}
+                </div>
+            </div>
+        </div>
+        <div v-else class="loading" style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+            Lade...
+        </div>
+    </template>
+
+    <!-- Modularisierte Scripts -->
+    <script src="frontend/js/config.js?v=27"></script>
+    <script src="frontend/js/utils/api.js?v=27"></script>
+    <script src="frontend/js/utils/sounds.js?v=27"></script>
+    <script src="frontend/js/utils/confetti.js?v=27"></script>
+    <script src="frontend/js/utils/spinAnimation.js?v=27"></script>
+    <script src="frontend/js/utils/auth.js?v=27"></script>
+    <script src="frontend/js/components/WheelComponent.js?v=27"></script>
+    <script src="frontend/js/pages/EventPage.js?v=27"></script>
+    <script src="frontend/js/pages/LoginPage.js?v=27"></script>
+    <script src="frontend/js/pages/AdminPage.js?v=27"></script>
+    <script src="frontend/js/app.js?v=28"></script>
+</body>
+</html>

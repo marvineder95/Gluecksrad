@@ -1,0 +1,22 @@
+{
+  "name": "Glücksrad",
+  "short_name": "Glücksrad",
+  "description": "Event Glücksrad für Marketing-Kampagnen",
+  "start_url": "/#/event",
+  "display": "standalone",
+  "background_color": "#F8F4EC",
+  "theme_color": "#C8A866",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "doveLogo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "doveLogo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

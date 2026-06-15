@@ -1,0 +1,48 @@
+# === GLÜCKSRAD SECURITY ===
+
+# 1. Blockiere Verzeichnisauflistung
+Options -Indexes
+
+# 2. Blockiere SQLite-Datenbanken
+<FilesMatch "\.(sqlite|sqlite3|db)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 3. Blockiere Setup/Migration/Test-Skripte
+<FilesMatch "(setup|migrate|migrate_pool|pool_tests)\.php$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 4. Blockiere Python-Skripte im Backend
+<FilesMatch "\.py$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 5. Blockiere Config-Dateien
+<FilesMatch "(\.env|\.ini|\.config)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
