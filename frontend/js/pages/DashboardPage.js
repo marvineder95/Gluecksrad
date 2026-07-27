@@ -315,6 +315,7 @@ const DashboardPage = {
                     sort_order: segment.sort_order,
                     max_count: segment.max_count || 0,
                     theme: segment.theme || 'neutral',
+                    color: segment.color || CONFIG.DEFAULTS.segment_color,
                     image: segment.image || '',
                     removeBg: false
                 };
@@ -327,7 +328,8 @@ const DashboardPage = {
                 segmentForm.value = {
                     name: '', win_text: '', weight: 100,
                     sort_order: segments.value.length, max_count: 1,
-                    theme: 'neutral', image: '', removeBg: autoRemoveBg.value
+                    theme: 'neutral', color: CONFIG.DEFAULTS.segment_color,
+                    image: '', removeBg: autoRemoveBg.value
                 };
                 segmentImageOffsetX.value = 0;
                 segmentImageOffsetY.value = 0;
@@ -379,6 +381,7 @@ const DashboardPage = {
                 formData.append('sort_order', segmentForm.value.sort_order);
                 formData.append('max_count', segmentForm.value.max_count);
                 formData.append('theme', segmentForm.value.theme || 'neutral');
+                formData.append('color', segmentForm.value.color || CONFIG.DEFAULTS.segment_color);
                 formData.append('remove_bg', segmentForm.value.removeBg ? '1' : '0');
                 formData.append('image_offset_x', String(segmentImageOffsetX.value || 0));
                 formData.append('image_offset_y', String(segmentImageOffsetY.value || 0));

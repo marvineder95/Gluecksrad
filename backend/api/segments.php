@@ -72,6 +72,8 @@ if ($method === 'POST') {
     $sort_order = intval($data['sort_order'] ?? 0);
     $max_count = intval($data['max_count'] ?? 0);
     $theme = sanitizeText($data['theme'] ?? 'neutral');
+    $color = sanitizeText($data['color'] ?? '#FF6B35');
+    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) { $color = '#FF6B35'; }
     $imageOffsetX = floatval($data['image_offset_x'] ?? 0);
     $imageOffsetY = floatval($data['image_offset_y'] ?? 0);
     $imageRotation = floatval($data['image_rotation'] ?? 0);
@@ -161,11 +163,11 @@ if ($method === 'POST') {
             $oldMaxCount = $oldSegment ? intval($oldSegment['max_count']) : 0;
 
             if ($imagePath !== null) {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             } else {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             }
 
             // Pool anpassen, falls sich max_count geändert hat
@@ -173,8 +175,8 @@ if ($method === 'POST') {
                 adjustPoolForSegment($db, $customerId, $id, $max_count);
             }
         } else {
-            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
+            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, color, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $color, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
             $id = $db->lastInsertId();
 
             // Neue Pool-Einträge für das neue Segment

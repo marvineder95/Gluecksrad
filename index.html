@@ -1697,6 +1697,11 @@
                             </div>
                         </div>
                         <div class="admin-form-group">
+                            <label>Segmentfarbe</label>
+                            <color-picker v-model="segmentForm.color"></color-picker>
+                            <p class="form-hint">Wird verwendet, wenn die Segment-Füllung auf „Segmentfarbe" steht.</p>
+                        </div>
+                        <div class="admin-form-group">
                             <label>Gewinntext</label>
                             <textarea class="admin-input" v-model="segmentForm.win_text" rows="2" style="resize: vertical;"></textarea>
                         </div>
