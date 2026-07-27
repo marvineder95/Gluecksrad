@@ -44,6 +44,12 @@ async function retryFetch(url, options = {}, maxRetries = 1) {
             return await fetchWithTimeout(url, options);
         } catch (e) {
             lastError = e;
+            // Kein Retry für nicht-idempotente Methoden (POST, PUT, PATCH, DELETE),
+            // da diese serverseitige Seiteneffekte auslösen können.
+            const method = (options.method || 'GET').toUpperCase();
+            if (method !== 'GET' && method !== 'HEAD') {
+                break;
+            }
             if (i < maxRetries) {
                 await new Promise(r => setTimeout(r, 1000 * (i + 1)));
             }
@@ -91,6 +97,15 @@ const api = {
         const res = await retryFetch(CONFIG.API_URL + endpoint, {
             method: 'DELETE',
             headers: getAuthHeaders()
+        });
+        return handleResponse(res);
+    },
+
+    async patch(endpoint, data) {
+        const res = await retryFetch(CONFIG.API_URL + endpoint, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(data)
         });
         return handleResponse(res);
     }

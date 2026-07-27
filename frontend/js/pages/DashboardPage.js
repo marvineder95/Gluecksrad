@@ -1,7 +1,8 @@
-const AdminPage = {
-    components: { WheelComponent },
+const DashboardPage = {
+    components: { WheelComponent, SegmentImageEditor },
     setup() {
         const isAuthenticated = Vue.ref(false);
+        const user = Vue.ref({});
         const stats = Vue.ref({
             total_spins: 0,
             total_spins_limit: CONFIG.DEFAULTS.total_spins_limit,
@@ -27,15 +28,18 @@ const AdminPage = {
         const logoFile = Vue.ref(null);
         const bgFile = Vue.ref(null);
         const segmentFormErrors = Vue.ref({});
+        const segmentImageOffsetX = Vue.ref(0);
+        const segmentImageOffsetY = Vue.ref(0);
+        const segmentImageRotation = Vue.ref(0);
+        const segmentImageScale = Vue.ref(1);
         const showPasswordModal = Vue.ref(false);
         const passwordForm = Vue.ref({ current: '', new: '', confirm: '' });
         const passwordError = Vue.ref('');
-        const showQrModal = Vue.ref(false);
         const showResetModal = Vue.ref(false);
+        const leads = Vue.ref([]);
         const resetting = Vue.ref(false);
-        const qrCodeUrl = Vue.computed(() => {
-            const base = window.location.origin + window.location.pathname;
-            return 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(base + '#/event');
+        const leadCaptureEnabled = Vue.computed(() => {
+            return formSettings.value.lead_capture_enabled === '1' || formSettings.value.lead_capture_enabled === 1 || formSettings.value.lead_capture_enabled === true;
         });
 
         // Form-bound settings mit zentralen Defaults
@@ -48,6 +52,20 @@ const AdminPage = {
                 id,
                 ...theme
             }));
+        });
+
+        const segmentEditorIndex = Vue.computed(() => {
+            if (!editingSegment.value) return segments.value.length;
+            const idx = segments.value.findIndex(s => s.id === editingSegment.value);
+            return idx >= 0 ? idx : segments.value.length;
+        });
+
+        const segmentEditorCount = Vue.computed(() => {
+            return editingSegment.value ? segments.value.length : segments.value.length + 1;
+        });
+
+        const canEditSegmentImage = Vue.computed(() => {
+            return !!segmentForm.value.image;
         });
 
         const autoRemoveBg = Vue.ref(false);
@@ -63,21 +81,28 @@ const AdminPage = {
                 wheel_title: sets.wheel_title || CONFIG.DEFAULTS.wheel_title,
                 logo: sets.logo || '',
                 background_image: sets.background_image || '',
-                theme: sets.theme || CONFIG.DEFAULTS.theme
+                theme: sets.theme || CONFIG.DEFAULTS.theme,
+                lead_capture_enabled: (sets.lead_capture_enabled === '1' || sets.lead_capture_enabled === 1 || sets.lead_capture_enabled === true) ? '1' : '0',
+                winner_email_enabled: (sets.winner_email_enabled === '1' || sets.winner_email_enabled === 1 || sets.winner_email_enabled === true) ? '1' : '0',
+                winner_email_subject: sets.winner_email_subject || CONFIG.DEFAULTS.winner_email_subject,
+                winner_email_body: sets.winner_email_body || CONFIG.DEFAULTS.winner_email_body,
+                winner_email_sender: sets.winner_email_sender || CONFIG.DEFAULTS.winner_email_sender
             };
             // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
 
         const loadAll = async () => {
             try {
-                const [statsData, segs, sets] = await Promise.all([
+                const [statsData, segs, sets, leadsData] = await Promise.all([
                     api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.stats),
                     api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings)
+                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings),
+                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads)
                 ]);
                 stats.value = statsData;
                 segments.value = segs;
                 settings.value = sets;
+                leads.value = leadsData || [];
                 syncFormSettings();
             } catch (e) {
                 console.error('Fehler beim Laden:', e);
@@ -120,35 +145,42 @@ const AdminPage = {
         };
 
         // Drehverlauf formatieren (österreichische Zeit)
+        const formatDateTime = (isoString) => {
+            let dateStr = '';
+            let timeStr = '';
+            try {
+                const date = new Date(isoString + 'Z');
+                dateStr = date.toLocaleDateString('de-AT', {
+                    timeZone: 'Europe/Vienna',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                timeStr = date.toLocaleTimeString('de-AT', {
+                    timeZone: 'Europe/Vienna',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (e) {
+                dateStr = isoString || '';
+            }
+            return { date: dateStr, time: timeStr };
+        };
+
         const formattedSpins = Vue.computed(() => {
             const spins = stats.value.recent_spins || [];
-            return spins.map(spin => {
-                let dateStr = '';
-                let timeStr = '';
-                try {
-                    // '+Z' erzwingt UTC-Interpretation, damit toLocaleTimeString korrekt rechnet
-                    const date = new Date(spin.created_at + 'Z');
-                    dateStr = date.toLocaleDateString('de-AT', {
-                        timeZone: 'Europe/Vienna',
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric'
-                    });
-                    timeStr = date.toLocaleTimeString('de-AT', {
-                        timeZone: 'Europe/Vienna',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    });
-                } catch (e) {
-                    dateStr = spin.created_at || '';
-                }
-                return {
-                    ...spin,
-                    date: dateStr,
-                    time: timeStr
-                };
-            });
+            return spins.map(spin => ({
+                ...spin,
+                ...formatDateTime(spin.created_at)
+            }));
+        });
+
+        const formattedLeads = Vue.computed(() => {
+            return leads.value.map(lead => ({
+                ...lead,
+                ...formatDateTime(lead.created_at)
+            }));
         });
 
         // Test spin
@@ -215,11 +247,14 @@ const AdminPage = {
                     weight: segment.weight,
                     sort_order: segment.sort_order,
                     max_count: segment.max_count || 0,
-
                     theme: segment.theme || 'neutral',
                     image: segment.image || '',
                     removeBg: false
                 };
+                segmentImageOffsetX.value = parseFloat(segment.image_offset_x) || 0;
+                segmentImageOffsetY.value = parseFloat(segment.image_offset_y) || 0;
+                segmentImageRotation.value = parseFloat(segment.image_rotation) || 0;
+                segmentImageScale.value = parseFloat(segment.image_scale) || 1;
             } else {
                 editingSegment.value = null;
                 segmentForm.value = {
@@ -227,6 +262,10 @@ const AdminPage = {
                     sort_order: segments.value.length, max_count: 1,
                     theme: 'neutral', image: '', removeBg: autoRemoveBg.value
                 };
+                segmentImageOffsetX.value = 0;
+                segmentImageOffsetY.value = 0;
+                segmentImageRotation.value = 0;
+                segmentImageScale.value = 1;
             }
             showSegmentModal.value = true;
         };
@@ -274,6 +313,10 @@ const AdminPage = {
                 formData.append('max_count', segmentForm.value.max_count);
                 formData.append('theme', segmentForm.value.theme || 'neutral');
                 formData.append('remove_bg', segmentForm.value.removeBg ? '1' : '0');
+                formData.append('image_offset_x', String(segmentImageOffsetX.value || 0));
+                formData.append('image_offset_y', String(segmentImageOffsetY.value || 0));
+                formData.append('image_rotation', String(segmentImageRotation.value || 0));
+                formData.append('image_scale', String(segmentImageScale.value || 1));
                 if (segmentImageFile.value) {
                     formData.append('segment_image', segmentImageFile.value);
                 } else if (segmentForm.value.image && !segmentForm.value.image.startsWith('blob:')) {
@@ -383,6 +426,11 @@ const AdminPage = {
                 formData.append('font_family', formSettings.value.font_family);
                 formData.append('wheel_title', formSettings.value.wheel_title);
                 formData.append('theme', formSettings.value.theme);
+                formData.append('lead_capture_enabled', formSettings.value.lead_capture_enabled === '1' ? '1' : '0');
+                formData.append('winner_email_enabled', formSettings.value.winner_email_enabled === '1' ? '1' : '0');
+                formData.append('winner_email_subject', formSettings.value.winner_email_subject);
+                formData.append('winner_email_body', formSettings.value.winner_email_body);
+                formData.append('winner_email_sender', formSettings.value.winner_email_sender);
                 if (logoFile.value) formData.append('logo', logoFile.value);
                 if (bgFile.value) formData.append('background_image', bgFile.value);
 
@@ -398,6 +446,52 @@ const AdminPage = {
 
         const goToWebsite = () => {
             navigateTo('#/event');
+        };
+
+        const deleteLead = async (id) => {
+            if (!confirm('Lead wirklich löschen?')) return;
+            try {
+                await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads + '?id=' + id);
+                addToast('Lead gelöscht');
+                loadAll();
+            } catch (e) {
+                addToast('Fehler beim Löschen', 'error');
+            }
+        };
+
+        const exportLeadsCSV = () => {
+            const headers = ['Name', 'E-Mail', 'Gewinn', 'Einwilligung', 'Datum', 'Uhrzeit'];
+            const rows = formattedLeads.value.map(lead => [
+                lead.name || '',
+                lead.email || '',
+                lead.prize || '-',
+                lead.consent_given ? 'Ja' : 'Nein',
+                lead.date || '',
+                lead.time || ''
+            ]);
+
+            const escapeCsv = (value) => {
+                const str = String(value ?? '');
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            };
+
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(escapeCsv).join(','))
+                .join('\n');
+
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = 'leads_' + new Date().toISOString().slice(0, 10) + '.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            addToast('CSV exportiert');
         };
 
         const openPasswordModal = () => {
@@ -443,8 +537,8 @@ const AdminPage = {
             } catch (e) {
                 console.error('Logout-Fehler:', e);
             } finally {
-                localStorage.removeItem('admin_token');
-                navigateTo('#/login');
+                clearAuth();
+                navigateTo('#/');
             }
         };
 
@@ -453,6 +547,7 @@ const AdminPage = {
         Vue.onMounted(() => {
             checkAuth().then(res => {
                 isAuthenticated.value = res.authenticated;
+                user.value = res.user || {};
                 if (!res.authenticated) {
                     authRedirectTimer = setTimeout(() => {
                         if (!isAuthenticated.value) {
@@ -472,6 +567,7 @@ const AdminPage = {
 
         return {
             isAuthenticated,
+            user,
             stats,
             segments,
             formSettings,
@@ -491,6 +587,7 @@ const AdminPage = {
             totalRemaining,
             formatNumber,
             formattedSpins,
+            formattedLeads,
             testSpin,
             resetCampaign,
             openSegmentModal,
@@ -503,10 +600,18 @@ const AdminPage = {
             saveAll,
             goToWebsite,
             logout,
+            navigateTo,
 
             getThemeImage,
             getThemeName,
             segmentImageFile,
+            segmentImageOffsetX,
+            segmentImageOffsetY,
+            segmentImageRotation,
+            segmentImageScale,
+            segmentEditorIndex,
+            segmentEditorCount,
+            canEditSegmentImage,
             onSegmentImageChange,
             segmentFormErrors,
             showPasswordModal,
@@ -515,18 +620,20 @@ const AdminPage = {
             openPasswordModal,
             changePassword,
             validateSegmentForm,
-            showQrModal,
             showResetModal,
             resetting,
-            qrCodeUrl,
+            leads,
+            leadCaptureEnabled,
             onDragStart,
             onDragOver,
             onDragLeave,
             onDragEnd,
             onDrop,
             draggedIndex,
-            dragOverIndex
+            dragOverIndex,
+            deleteLead,
+            exportLeadsCSV
         };
     },
-    template: '#admin-template'
+    template: '#dashboard-template'
 };

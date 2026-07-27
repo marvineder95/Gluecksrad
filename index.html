@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#C8A866">
-    <title>Glücksrad</title>
+    <meta name="theme-color" content="#0b155d">
+    <title>Point4 Spin</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="doveLogo.png">
-    <link rel="apple-touch-icon" href="doveLogo.png">
-    <link rel="stylesheet" href="frontend/css/style.css?v=31">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192x192.png">
+    <link rel="stylesheet" href="frontend/css/style.css?v=112">
+    <link rel="stylesheet" href="frontend/css/landing-new.css?v=112">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -85,15 +86,17 @@
                             </textPath>
                         </text>
 
-                        <!-- === PRODUCT IMAGES (clipped to wedge) -->
+                        <!-- === PRODUCT IMAGES (rotated to segment bisector) -->
                         <g v-if="segment.image" style="pointer-events: none;">
-                            <image :x="segment.imageX - segment.imageSize / 2"
-                                   :y="segment.imageY - segment.imageSize / 2"
-                                   :width="segment.imageSize"
-                                   :height="segment.imageSize"
-                                   :href="segment.image"
-                                   filter="url(#productShadow)"
-                                   preserveAspectRatio="xMidYMid meet"/>
+                            <g :transform="'translate(' + segment.imageX + ' ' + segment.imageY + ') rotate(' + segment.imageRotation + ')'">
+                                <image :x="-segment.boxWidth / 2"
+                                       :y="-segment.boxHeight / 2"
+                                       :width="segment.boxWidth"
+                                       :height="segment.boxHeight"
+                                       :href="segment.image"
+                                       filter="url(#productShadow)"
+                                       preserveAspectRatio="xMidYMid meet"/>
+                            </g>
                         </g>
                     </g>
                     <!-- Subtle white separator stroke (NOT clipped, drawn on top of adjacent segments) -->
@@ -138,6 +141,58 @@
         </svg>
     </template>
 
+    <template id="segment-image-editor-template">
+        <div class="segment-image-editor">
+            <svg class="segment-image-editor-svg" width="400" height="400" viewBox="0 0 400 400">
+                <defs>
+                    <clipPath :id="clipId">
+                        <path :d="wedgePath" fill="white"/>
+                    </clipPath>
+                    <filter id="editorProductShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.18)"/>
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.1)"/>
+                    </filter>
+                </defs>
+                <g :clip-path="'url(#' + clipId + ')'">
+                    <image :href="theme.image" :x="center - radius" :y="center - radius"
+                           :width="radius * 2" :height="radius * 2" preserveAspectRatio="xMidYMid slice"/>
+                    <path :d="wedgePath" :fill="theme.overlay" style="pointer-events: none;"/>
+
+                    <g v-if="segment && segment.image"
+                       :transform="'translate(' + currentImageX + ' ' + currentImageY + ') rotate(' + currentImageRotation + ')'"
+                       style="cursor: move;"
+                       @pointerdown="onPointerDown">
+                        <image :x="-layout.boxWidth / 2"
+                               :y="-layout.boxHeight / 2"
+                               :width="layout.boxWidth"
+                               :height="layout.boxHeight"
+                               :href="segment.image"
+                               filter="url(#editorProductShadow)"
+                               preserveAspectRatio="xMidYMid meet"
+                               style="pointer-events: all;"/>
+                    </g>
+                </g>
+                <path :d="wedgePath" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" style="pointer-events: none;"/>
+            </svg>
+
+            <div class="segment-image-editor-controls">
+                <div class="segment-image-editor-control">
+                    <label>Rotation</label>
+                    <input type="range" min="-180" max="180" step="1" :value="rotation" @input="onRotationInput">
+                    <span class="segment-image-editor-value">{{ rotationDisplay }}°</span>
+                </div>
+                <div class="segment-image-editor-control">
+                    <label>Größe</label>
+                    <input type="range" min="0.2" max="2" step="0.05" :value="scale" @input="onScaleInput">
+                    <span class="segment-image-editor-value">{{ scaleDisplay }}</span>
+                </div>
+                <button type="button" class="btn-ghost btn-small" @click="resetTransform">
+                    Position, Rotation & Größe zurücksetzen
+                </button>
+            </div>
+        </div>
+    </template>
+
     <template id="event-template">
         <div class="event-page">
             <div class="event-bg-image" :style="bgStyle"></div>
@@ -152,6 +207,43 @@
                     <img :src="logoUrl" class="logo-taube-img" alt="Logo">
                 </div>
                 <div class="gold-line"></div>
+            </div>
+
+            <!-- Lead Capture Form -->
+            <div v-if="leadCaptureEnabled && showLeadForm && !campaignEnded" class="lead-form-container">
+                <div class="lead-form-card">
+                    <div class="lead-form-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3 class="lead-form-title">Gleich geht's los!</h3>
+                    <p class="lead-form-subtitle">Trage dich ein, um am Gewinnspiel teilzunehmen.</p>
+                    <div class="lead-form-fields">
+                        <input
+                            type="text"
+                            v-model="leadForm.name"
+                            placeholder="Dein Name"
+                            class="lead-form-input"
+                            @keyup.enter="submitLead()"
+                        >
+                        <input
+                            type="email"
+                            v-model="leadForm.email"
+                            placeholder="Deine E-Mail-Adresse"
+                            class="lead-form-input"
+                            @keyup.enter="submitLead()"
+                        >
+                        <label class="lead-consent-label">
+                            <input type="checkbox" v-model="consentGiven">
+                            <span>Ich stimme der Verarbeitung meiner Daten sowie den Teilnahmebedingungen zu.</span>
+                        </label>
+                    </div>
+                    <p v-if="leadError" class="lead-form-error">{{ leadError }}</p>
+                    <button class="lead-form-submit" @click="submitLead()">
+                        <span>Weiter zum Glücksrad</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                    <button class="lead-form-skip" @click="skipLead">Überspringen</button>
+                </div>
             </div>
 
             <div class="wheel-area" ref="wheelAreaRef">
@@ -184,12 +276,12 @@
                     <p>Alle Gewinne wurden vergeben.</p>
                     <p class="campaign-ended-sub">Vielen Dank für Ihre Teilnahme!</p>
                     <p class="campaign-ended-hint">Erstelle eine neue Kampagne oder erhöhe die Anzahl der zu drehenden Segmente im Admin-Panel.</p>
-                    <button class="campaign-admin-btn" @click="navigateTo('#/admin')">Zum Admin-Panel</button>
+                    <button class="campaign-admin-btn" @click="navigateTo('#/dashboard')">Zum Dashboard</button>
                 </div>
             </div>
 
             <div class="spin-area" v-else>
-                <button class="spin-button" @click="spin" :disabled="spinning || showWin">
+                <button class="spin-button" @click="spin()" :disabled="spinning || showWin || (leadCaptureEnabled && showLeadForm)">
                     {{ spinning ? 'Dreht...' : 'DREHEN' }}
                 </button>
                 <div class="spin-hint">Buzzer drücken zum drehen</div>
@@ -198,58 +290,759 @@
             <!-- Secret Admin Corner -->
             <div class="secret-corner" @click="handleSecretClick"></div>
 
-            <div v-if="showWin" class="win-overlay" @click.self="nextRound">
-                <div class="win-content">
-                    <div class="win-badge">GEWONNEN!</div>
-                    <img v-if="winner?.image" :src="winner.image" class="win-image" alt="">
-                    <div class="win-name">{{ winner?.name }}</div>
-                    <div class="win-text">{{ winner?.win_text || 'Herzlichen Glückwunsch!' }}</div>
-                    <button class="next-round-btn" @click="nextRound">NÄCHSTE RUNDE</button>
+            <Transition name="win-fade">
+                <div v-if="showWin" class="win-overlay" @click.self="nextRound">
+                    <div class="win-content">
+                        <div class="win-badge">GEWONNEN!</div>
+                        <img v-if="winner?.image" :src="winner.image" class="win-image" alt="">
+                        <div class="win-name">{{ winner?.name }}</div>
+                        <div class="win-text">{{ winner?.win_text || 'Herzlichen Glückwunsch!' }}</div>
+                        <button class="next-round-btn" @click="nextRound">NÄCHSTE RUNDE</button>
+                    </div>
                 </div>
-            </div>
+            </Transition>
 
             <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
         </div>
     </template>
 
-    <template id="login-template">
-        <div class="login-page">
-            <div class="login-card">
-                <div class="login-logo-wrap">
-                    <img :src="logoUrl" alt="Logo">
+    <template id="landing-template">
+        <div class="landing-page">
+            <!-- Navigation -->
+            <nav class="landing-nav">
+                <a href="#" class="landing-nav-logo" aria-label="Zum Seitenanfang">
+                    <img src="frontend/assets/img/point4spinLogo.png" alt="Point4 Spin">
+                </a>
+
+                <div class="landing-nav-links">
+                    <a href="#use-cases">Einsatzbereiche</a>
+                    <a href="#benefits">Vorteile</a>
+                    <a href="#how-it-works">So funktioniert’s</a>
+                    <a href="#references">Referenzen</a>
+                    <a href="#pricing">Preise</a>
+                    <a href="#contact">Kontakt</a>
                 </div>
-                <h2>Admin Login</h2>
-                <p class="login-subtitle">Glücksrad Verwaltung</p>
-                <form @submit.prevent="login">
-                    <div class="login-field">
-                        <label>Benutzername</label>
-                        <div class="login-input-wrap">
-                            <svg class="login-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            <input type="text" v-model="username" required placeholder="admin">
+
+                <div class="landing-nav-actions">
+                    <a href="#contact" class="landing-nav-btn-demo">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span>Demo anfragen</span>
+                    </a>
+                    <a href="#/login" @click.prevent="openLogin" class="landing-nav-btn-login">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>Login</span>
+                    </a>
+                </div>
+
+                <button type="button" class="landing-nav-mobile-toggle" @click="toggleMobileMenu" aria-label="Menü öffnen">
+                    <svg v-if="!mobileMenuOpen" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+
+                <div class="landing-nav-mobile-menu" :class="{ 'is-open': mobileMenuOpen }">
+                    <a href="#use-cases" @click="closeMobileMenu">Einsatzbereiche</a>
+                    <a href="#benefits" @click="closeMobileMenu">Vorteile</a>
+                    <a href="#how-it-works" @click="closeMobileMenu">So funktioniert’s</a>
+                    <a href="#references" @click="closeMobileMenu">Referenzen</a>
+                    <a href="#pricing" @click="closeMobileMenu">Preise</a>
+                    <a href="#contact" @click="closeMobileMenu">Kontakt</a>
+                    <div class="landing-nav-mobile-actions">
+                        <a href="#contact" class="landing-btn-primary" @click="closeMobileMenu">Demo anfragen</a>
+                        <a href="#/login" class="landing-btn-outline" @click.prevent="openLogin; closeMobileMenu();">Login</a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Hero Section (unverändert) -->
+            <section class="landing-hero-section">
+                <div class="landing-hero-bg">
+                    <div class="landing-hero-glow landing-hero-glow-1"></div>
+                    <div class="landing-hero-glow landing-hero-glow-2"></div>
+                    <div class="landing-hero-glow landing-hero-glow-3"></div>
+                </div>
+                <div class="landing-hero-content">
+                    <span class="landing-badge">✦ INTERAKTIVE PROMOTION PLATFORM</span>
+                    <h1>Das Event-Glücksrad mit kontrollierter Gewinnverteilung.</h1>
+                    <p>Point4 Spin macht Ihre Promotionen, Messen und Events interaktiv, individuell gebrandet und messbar erfolgreich.</p>
+                    <div class="landing-hero-features">
+                        <div class="landing-hero-feature">
+                            <div class="landing-feature-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            </div>
+                            <div class="landing-feature-text">
+                                <strong>Eigenes Branding</strong>
+                                <span>Passen Sie das Design an Ihre Marke an.</span>
+                            </div>
+                        </div>
+                        <div class="landing-hero-feature">
+                            <div class="landing-feature-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5H11v5"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5H13v5"/></svg>
+                            </div>
+                            <div class="landing-feature-text">
+                                <strong>Exakte Gewinnkontrolle</strong>
+                                <span>Bestimmen Sie genau, wie oft jeder Gewinn im Rad vorkommt.</span>
+                            </div>
+                        </div>
+                        <div class="landing-hero-feature">
+                            <div class="landing-feature-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                            </div>
+                            <div class="landing-feature-text">
+                                <strong>Buzzer-Unterstützung</strong>
+                                <span>Starten Sie das Rad per Knopfdruck – perfekt für Events.</span>
+                            </div>
+                        </div>
+                        <div class="landing-hero-feature">
+                            <div class="landing-feature-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                            </div>
+                            <div class="landing-feature-text">
+                                <strong>Hochformat Displays</strong>
+                                <span>Optimiert für 43" Stelen und Touchscreens.</span>
+                            </div>
+                        </div>
+                        <div class="landing-hero-feature">
+                            <div class="landing-feature-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            </div>
+                            <div class="landing-feature-text">
+                                <strong>Live Statistiken</strong>
+                                <span>Verfolgen Sie alle Drehungen und Gewinne in Echtzeit.</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="login-field">
-                        <label>Passwort</label>
-                        <div class="login-input-wrap">
-                            <svg class="login-input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <input :type="showPassword ? 'text' : 'password'" v-model="password" required placeholder="Passwort">
-                            <button type="button" class="login-eye-btn" @click="togglePassword" tabindex="-1">
-                                <svg v-if="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.57m-3.47 3.47L3 3"/></svg>
-                            </button>
+                    <div class="landing-hero-actions">
+                        <a href="#contact" class="landing-btn-primary">Demo anfragen <span>→</span></a>
+                        <a href="#benefits" class="landing-link-arrow">Mehr erfahren <span>→</span></a>
+                    </div>
+                </div>
+                <div class="landing-hero-visual">
+                    <div class="hero-image-wrapper">
+                        <img src="frontend/assets/img/BildschirmLandingPage.png" alt="Point4 Spin Glücksrad Terminal" class="hero-wheel-image">
+                        <div class="hero-buzzer-wrap">
+                            <img src="frontend/assets/img/buzzerImg.png" alt="Point4 Spin Buzzer" class="hero-buzzer-image">
+                            <div class="hero-buzzer-label">
+                                <span>Mit Buzzer<br>starten!</span>
+                                <svg class="hero-buzzer-arrow" width="36" height="48" viewBox="0 0 36 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M28 4Q20 18 10 38"/>
+                                    <path d="M10 38l-4 6l8 -2"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
-                    <div v-if="error" class="login-error">{{ error }}</div>
-                    <button type="submit" class="login-submit-btn">Anmelden</button>
-                </form>
-                <div class="login-footer">
-                    <p>Willkommen zurück!</p>
+                </div>
+            </section>
+
+            <!-- Use Cases -->
+            <section id="use-cases" class="landing-use-cases-section">
+                <div class="landing-section-header reveal">
+                    <span class="landing-section-eyebrow">Einsatzbereiche</span>
+                    <h2>Für jedes Event das passende Erlebnis</h2>
+                </div>
+                <div class="landing-use-cases-grid">
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/MessenImg.png" alt="Messen" class="landing-use-case-img">
+                        <h3>Messen</h3>
+                        <p>Mehr Besucher an Ihren Stand locken und Kontakte spielerisch generieren.</p>
+                    </div>
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/GewinnspieleImg.png" alt="Gewinnspiele" class="landing-use-case-img">
+                        <h3>Gewinnspiele</h3>
+                        <p>Motivieren, belohnen und begeistern – mit fairer Gewinnverteilung.</p>
+                    </div>
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/PromoAktionenImg.png" alt="Promotion-Aktionen" class="landing-use-case-img">
+                        <h3>Promotion-Aktionen</h3>
+                        <p>Aufmerksamkeit steigern und Ihre Marke positiv in Erinnerung bleiben.</p>
+                    </div>
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/ProduktlaunchesImg.png" alt="Produktlaunches" class="landing-use-case-img">
+                        <h3>Produktlaunches</h3>
+                        <p>Machen Sie Ihr Produkt mit einem unvergesslichen Moment erlebbar.</p>
+                    </div>
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/EinkaufszentrenImg.png" alt="Einkaufszentren" class="landing-use-case-img">
+                        <h3>Einkaufszentren</h3>
+                        <p>Besucher aktiv anziehen und Shopping-Erlebnisse aufwerten.</p>
+                    </div>
+                    <div class="landing-use-case-card reveal">
+                        <img src="frontend/assets/img/RoadshowImg.png" alt="Roadshows" class="landing-use-case-img">
+                        <h3>Roadshows</h3>
+                        <p>Interaktiv an jedem Standort – einfach aufbauen und sofort starten.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Benefits -->
+            <section id="benefits" class="landing-benefits-section">
+                <div class="landing-section-header reveal">
+                    <span class="landing-section-eyebrow">Vorteile</span>
+                    <h2>Warum Unternehmen Point4 Spin einsetzen</h2>
+                    <p>Alle Vorteile, die Ihre Live-Marketing-Kampagnen erfolgreicher machen – in einer Lösung, die einfach funktioniert.</p>
+                </div>
+
+                <div class="landing-benefits-layout reveal">
+                    <!-- Left column -->
+                    <div class="landing-benefits-col">
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>Mehr Aufmerksamkeit</h3>
+                                <p>Besucher bleiben stehen, interagieren aktiv und beschäftigen sich mit Ihrer Marke.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                    <div><strong>+38%</strong><span>mehr Interaktion*</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>Mehr Kontakte</h3>
+                                <p>Erfassen Sie Teilnehmerdaten direkt während der Aktion und generieren Sie qualifizierte Leads.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    <div><strong>Leads generieren</strong><span>einfach & DSGVO-konform</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5H12"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5H12"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>Planbare Gewinnverteilung</h3>
+                                <p>Bestimmen Sie exakt, welche Gewinne wie oft ausgespielt werden – mit fairer Verteilung.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                                    <div><strong>Volle Kontrolle</strong><span>über Ihre Aktion</span></div>
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Center visual -->
+                    <div class="landing-benefits-visual">
+                        <img src="frontend/assets/img/BildschirmLandingPage.png" alt="Point4 Spin Terminal">
+                    </div>
+
+                    <!-- Right column -->
+                    <div class="landing-benefits-col">
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>In Minuten startklar</h3>
+                                <p>Display aufstellen, Branding auswählen und sofort loslegen. Ohne komplizierte Einrichtung.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                    <div><strong>5 Minuten</strong><span>und es kann losgehen</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>Live-Auswertungen</h3>
+                                <p>Verfolgen Sie Teilnehmerzahlen, Drehungen und Gewinne in Echtzeit – überall und jederzeit.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                    <div><strong>Echtzeit-Insights</strong><span>für bessere Entscheidungen</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="landing-benefit-feature">
+                            <div class="landing-benefit-feature-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                            </div>
+                            <div class="landing-benefit-feature-content">
+                                <h3>Für jede Promotion geeignet</h3>
+                                <p>Ob Messe, Roadshow, Einkaufszentrum oder Produktlaunch – Point4 Spin passt sich Ihrem Event an.</p>
+                                <div class="landing-benefit-sub">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <div><strong>Flexibel einsetzbar</strong><span>für jeden Anlass</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="landing-benefits-bar reveal">
+                    <div class="landing-benefit-bar-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <span>Mehr Besucher</span>
+                    </div>
+                    <div class="landing-benefit-bar-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span>Mehr Interaktion</span>
+                    </div>
+                    <div class="landing-benefit-bar-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2z"/></svg>
+                        <span>Mehr Leads</span>
+                    </div>
+                    <div class="landing-benefit-bar-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                        <span>Mehr Erfolg</span>
+                    </div>
+                    <a href="#contact" class="landing-benefit-bar-cta">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span>Ihre Aktion. Ihr Erfolg.<br><strong>Point4 Spin.</strong></span>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Login Modal -->
+            <div v-if="showLoginModal" class="landing-login-modal" @click.self="showLoginModal = false">
+                <div class="landing-login-card landing-login-card-modal">
+                    <button type="button" class="landing-login-close" @click="closeLogin" aria-label="Schließen">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    <h2>Login</h2>
+                    <p>Melden Sie sich in Ihrem Konto an, um Ihre Kampagnen zu verwalten.</p>
+                    <form @submit.prevent="login" class="landing-login-form">
+                        <div class="login-field">
+                            <label>E-Mail-Adresse</label>
+                            <input type="email" v-model="email" required placeholder="name@unternehmen.at">
+                        </div>
+                        <div class="login-field">
+                            <label>Passwort</label>
+                            <div class="login-input-wrap">
+                                <input :type="showPassword ? 'text' : 'password'" v-model="password" required placeholder="Passwort">
+                                <button type="button" class="login-eye-btn" @click="togglePassword" tabindex="-1">
+                                    <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.57m-3.47 3.47L3 3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="landing-login-options">
+                            <label class="landing-remember">
+                                <input type="checkbox"> Angemeldet bleiben
+                            </label>
+                            <a href="#" class="landing-link">Passwort vergessen?</a>
+                        </div>
+                        <div v-if="error" class="login-error">{{ error }}</div>
+                        <button type="submit" class="login-submit-btn landing-btn-gold" :disabled="isLoading">
+                            {{ isLoading ? 'Wird angemeldet...' : 'Einloggen' }} <span>→</span>
+                        </button>
+                    </form>
+                    <div class="landing-login-divider"><span>oder</span></div>
+                    <a href="#contact" @click="showLoginModal = false" class="landing-btn-outline">👤 Demo anfragen</a>
+                    <p class="landing-login-signup">Neu bei Point4 Spin? <a href="#contact" @click="showLoginModal = false">Kontaktieren Sie uns</a> für eine individuelle Demo oder ein unverbindliches Angebot.</p>
                 </div>
             </div>
-        </div>
-    </template>
 
-    <template id="admin-template">
+            <!-- How It Works -->
+            <section id="how-it-works" class="landing-how-section">
+                <div class="landing-section-header reveal">
+                    <span class="landing-section-eyebrow">So funktioniert’s</span>
+                    <h2>In vier Schritten zum erfolgreichen Event</h2>
+                    <p>Point4 Spin ist sofort einsatzbereit und passt sich Ihrem Workflow an.</p>
+                </div>
+
+                <div class="landing-steps reveal">
+                    <div class="landing-step">
+                        <div class="landing-step-number">1</div>
+                        <div class="landing-step-visual">
+                            <img src="frontend/assets/img/SFLaptop.png" alt="Kampagne erstellen">
+                            <div class="landing-step-float-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                            </div>
+                        </div>
+                        <h3>Kampagne erstellen</h3>
+                        <p>Legen Sie Ihre Kampagne an und konfigurieren Sie Gewinne, Design und Regeln.</p>
+                    </div>
+
+                    <div class="landing-step">
+                        <div class="landing-step-number">2</div>
+                        <div class="landing-step-visual">
+                            <img src="frontend/assets/img/SFMontior.png" alt="Event starten">
+                            <div class="landing-step-float-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                            </div>
+                        </div>
+                        <h3>Event starten</h3>
+                        <p>Starten Sie das Rad auf Ihrem Event – per Touchscreen, Buzzer oder Tablet.</p>
+                    </div>
+
+                    <div class="landing-step">
+                        <div class="landing-step-number">3</div>
+                        <div class="landing-step-visual">
+                            <img src="frontend/assets/img/SFGeschenk.png" alt="Gewinne verteilen">
+                            <div class="landing-step-float-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5H12"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5H12"/></svg>
+                            </div>
+                        </div>
+                        <h3>Gewinne verteilen</h3>
+                        <p>Fair, digital und nachvollziehbar – mit automatischer Lead-Erfassung.</p>
+                    </div>
+
+                    <div class="landing-step">
+                        <div class="landing-step-number">4</div>
+                        <div class="landing-step-visual">
+                            <img src="frontend/assets/img/SFTablet.png" alt="Erfolge messen">
+                            <div class="landing-step-float-icon">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            </div>
+                        </div>
+                        <h3>Erfolge messen</h3>
+                        <p>Behalten Sie alle Ergebnisse und Statistiken im Blick.</p>
+                    </div>
+                </div>
+
+                <div class="landing-how-features reveal">
+                    <div class="landing-how-feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <div>
+                            <strong>Einfach & flexibel</strong>
+                            <span>Individuell an Ihre Ziele anpassbar.</span>
+                        </div>
+                    </div>
+                    <div class="landing-how-feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <div>
+                            <strong>Sofort einsatzbereit</strong>
+                            <span>In wenigen Minuten live.</span>
+                        </div>
+                    </div>
+                    <div class="landing-how-feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <div>
+                            <strong>Fair & transparent</strong>
+                            <span>Volle Kontrolle über alle Gewinne.</span>
+                        </div>
+                    </div>
+                    <div class="landing-how-feature-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <div>
+                            <strong>Daten in Echtzeit</strong>
+                            <span>Fundierte Entscheidungen treffen.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="landing-how-banner reveal">
+                    <div class="landing-how-banner-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                    </div>
+                    <div class="landing-how-banner-text">
+                        <strong>Von der Idee bis zur Auswertung – alles in einer Lösung.</strong>
+                        <span>Mehr Interaktion. Mehr Leads. Mehr Erfolg für Ihre Events.</span>
+                    </div>
+                    <a href="#contact" class="landing-how-banner-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Demo anfragen
+                    </a>
+                </div>
+            </section>
+
+            <!-- References -->
+            <section id="references" class="landing-references-section">
+                <div class="landing-section-header reveal">
+                    <span class="landing-section-eyebrow">Referenzen</span>
+                    <h2>Das sagen unsere Kunden</h2>
+                    <p>Erste Rückmeldungen von Unternehmen, die Point4 Spin bereits einsetzen.</p>
+                </div>
+                <div class="landing-references-grid">
+                    <div class="landing-reference-card reveal">
+                        <span class="landing-reference-badge">Beispielkunde</span>
+                        <p class="landing-reference-quote">„Point4 Spin hat unseren Messeauftritt komplett verändert. Der Stand war permanent gut besucht und wir haben wertvolle Leads generiert.“</p>
+                        <div class="landing-reference-author">
+                            <div class="landing-reference-avatar">MS</div>
+                            <div>
+                                <strong>Michael Schmidt</strong>
+                                <span>Event Manager, Muster GmbH</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="landing-reference-card reveal">
+                        <span class="landing-reference-badge">Beispielkunde</span>
+                        <p class="landing-reference-quote">„Die Gewinnkontrolle gibt uns Sicherheit, dass keine Preise über Gebühr ausgeschüttet werden. Dabei wirkt das Rad immer fair und spannend.“</p>
+                        <div class="landing-reference-author">
+                            <div class="landing-reference-avatar gold">SK</div>
+                            <div>
+                                <strong>Sarah Kowalski</strong>
+                                <span>Marketing Leiterin, Beispiel AG</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="landing-reference-card reveal">
+                        <span class="landing-reference-badge">Beispielkunde</span>
+                        <p class="landing-reference-quote">„Setup war kinderleicht und das Dashboard zeigt uns live, wie die Kampagne läuft. Absolut empfehlenswert!“</p>
+                        <div class="landing-reference-author">
+                            <div class="landing-reference-avatar">TW</div>
+                            <div>
+                                <strong>Thomas Weber</strong>
+                                <span>Geschäftsführer, Demo & Co</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pricing -->
+            <section id="pricing" class="landing-pricing-section">
+                <div class="landing-section-header reveal">
+                    <span class="landing-section-eyebrow">Preise</span>
+                    <h2>Transparente Pakete für jedes Event</h2>
+                    <p>Wählen Sie das passende Paket für Ihre Veranstaltung. Alle Kernfunktionen sind in jedem Paket enthalten.</p>
+                </div>
+                <div class="landing-pricing-grid">
+                    <div class="landing-pricing-card reveal">
+                        <div class="landing-pricing-card-head">
+                            <h3>Starter</h3>
+                            <p>Ideal für einzelne Events und erste Kampagnen.</p>
+                        </div>
+                        <div class="landing-pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">199</span>
+                            <span class="period">/ Event</span>
+                        </div>
+                        <ul class="landing-pricing-features">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Individuelles Branding</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Kontrollierte Gewinnverteilung</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Unbegrenzte Drehungen</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Buzzer-Unterstützung</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Lead-Erfassung</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Live-Statistiken</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Standard E-Mail Support</li>
+                        </ul>
+                        <a href="#contact" class="landing-btn-outline">Paket anfragen</a>
+                    </div>
+                    <div class="landing-pricing-card featured reveal">
+                        <span class="landing-pricing-badge">Empfohlen</span>
+                        <div class="landing-pricing-card-head">
+                            <h3>Business</h3>
+                            <p>Für Unternehmen mit regelmäßigen Events.</p>
+                        </div>
+                        <div class="landing-pricing-price">
+                            <span class="currency">€</span>
+                            <span class="amount">399</span>
+                            <span class="period">/ Event</span>
+                        </div>
+                        <ul class="landing-pricing-features">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Alle Starter Features</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Einrichtung durch Point4</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Priorisierter Support</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Export von Teilnehmerdaten</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>E-Mail Benachrichtigungen</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Erweiterte Statistiken</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Mehrere Kampagnen verwalten</li>
+                        </ul>
+                        <a href="#contact" class="landing-btn-primary">Demo anfragen</a>
+                    </div>
+                    <div class="landing-pricing-card reveal">
+                        <div class="landing-pricing-card-head">
+                            <h3>Enterprise</h3>
+                            <p>Für Agenturen und große Kampagnen.</p>
+                        </div>
+                        <div class="landing-pricing-price enterprise">
+                            <span class="amount">Individuell</span>
+                            <span class="period">auf Anfrage</span>
+                        </div>
+                        <ul class="landing-pricing-features">
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Alle Business Features</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>White-Label Option</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Eigene Domain/Subdomain</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Individuelle Integrationen</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Mehrere Benutzer</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Persönlicher Ansprechpartner</li>
+                            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Premium Support</li>
+                        </ul>
+                        <a href="#contact" class="landing-btn-outline">Individuelles Angebot</a>
+                    </div>
+                </div>
+
+                <!-- Trust / conversion block -->
+                <div class="landing-pricing-trust reveal">
+                    <div class="landing-pricing-trust-item">
+                        <div class="landing-pricing-trust-icon">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        </div>
+                        <div>
+                            <strong>Software-Lizenz pro Event</strong>
+                            <span>Hardware, Lieferung und Aufbau optional zubuchbar.</span>
+                        </div>
+                    </div>
+                    <div class="landing-pricing-trust-item">
+                        <div class="landing-pricing-trust-icon">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        </div>
+                        <div>
+                            <strong>Hardware optional verfügbar</strong>
+                            <span>Passende Displays, Stelen und Buzzer auf Anfrage.</span>
+                        </div>
+                    </div>
+                    <div class="landing-pricing-trust-item">
+                        <div class="landing-pricing-trust-icon">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                        </div>
+                        <div>
+                            <strong>Lieferung & Aufbau möglich</strong>
+                            <span>Wir kümmern uns auf Wunsch um Aufbau und Einrichtung.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversion CTA -->
+                <div class="landing-pricing-help reveal">
+                    <div class="landing-pricing-help-content">
+                        <h3>Nicht sicher welches Paket passt?</h3>
+                        <p>Wir beraten Sie kostenlos und empfehlen die passende Lösung für Ihr Event.</p>
+                    </div>
+                    <a href="#contact" class="landing-btn-primary">Kostenlose Beratung anfragen</a>
+                </div>
+            </section>
+
+            <!-- Contact -->
+            <section id="contact" class="landing-contact-section">
+                <div class="landing-contact-grid">
+                    <div class="landing-contact-info reveal">
+                        <span class="landing-section-eyebrow">Demo anfragen</span>
+                        <h2>Lassen Sie uns Ihr Event besprechen</h2>
+                        <p>Erzählen Sie uns von Ihrem Vorhaben. Wir melden uns innerhalb eines Werktags mit einem passenden Angebot.</p>
+                        <div class="landing-contact-benefits">
+                            <div class="landing-contact-benefit">
+                                <div class="landing-contact-benefit-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <strong>Kostenlose Beratung</strong>
+                                    <span>Wir finden gemeinsam das passende Paket.</span>
+                                </div>
+                            </div>
+                            <div class="landing-contact-benefit">
+                                <div class="landing-contact-benefit-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <strong>Schnelle Rückmeldung</strong>
+                                    <span>Innerhalb von 24 Stunden an Werktagen.</span>
+                                </div>
+                            </div>
+                            <div class="landing-contact-benefit">
+                                <div class="landing-contact-benefit-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <strong>Live-Demo möglich</strong>
+                                    <span>Sehen Sie Point4 Spin direkt in Aktion.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="landing-contact-form reveal" @submit.prevent="submitContact">
+                        <div class="landing-form-grid">
+                            <div class="landing-form-field">
+                                <label>Name <span class="required">*</span></label>
+                                <input type="text" v-model="contactForm.name" placeholder="Max Mustermann" required>
+                            </div>
+                            <div class="landing-form-field">
+                                <label>Firma</label>
+                                <input type="text" v-model="contactForm.company" placeholder="Unternehmen GmbH">
+                            </div>
+                            <div class="landing-form-field">
+                                <label>E-Mail <span class="required">*</span></label>
+                                <input type="email" v-model="contactForm.email" placeholder="name@unternehmen.at" required>
+                            </div>
+                            <div class="landing-form-field">
+                                <label>Telefon</label>
+                                <input type="tel" v-model="contactForm.phone" placeholder="+43 123 456789">
+                            </div>
+                            <div class="landing-form-field full-width">
+                                <label>Event-Datum</label>
+                                <input type="text" v-model="contactForm.event_date" placeholder="TT.MM.JJJJ">
+                            </div>
+                            <div class="landing-form-field full-width">
+                                <label>Nachricht <span class="required">*</span></label>
+                                <textarea v-model="contactForm.message" placeholder="Erzählen Sie uns kurz von Ihrem Event, Ihren Zielen und wie viele Teilnehmer Sie erwarten." required></textarea>
+                            </div>
+                            <div class="landing-form-field full-width">
+                                <label class="landing-form-checkbox">
+                                    <input type="checkbox" v-model="contactForm.copy_to_sender">
+                                    <span>Senden Sie mir eine Kopie dieser Anfrage an meine E-Mail-Adresse.</span>
+                                </label>
+                            </div>
+                            <div class="landing-form-field full-width">
+                                <label class="landing-form-checkbox">
+                                    <input type="checkbox" v-model="contactForm.privacy_consent" required>
+                                    <span>Ich stimme der Verarbeitung meiner Daten gemäß <a href="https://point4studio.at" target="_blank">Datenschutzerklärung</a> zu. <span class="required">*</span></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div v-if="contactSuccess" class="landing-form-message success">{{ contactSuccess }}</div>
+                        <div v-if="contactError" class="landing-form-message error">{{ contactError }}</div>
+                        <button type="submit" class="landing-btn-primary" :disabled="contactSubmitting">
+                            {{ contactSubmitting ? 'Wird gesendet...' : 'Demo-Anfrage senden' }}
+                            <span v-if="!contactSubmitting">→</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="landing-footer-section">
+                <div class="landing-footer-main">
+                    <div class="landing-footer-brand">
+                        <a href="#" class="landing-footer-logo">
+                            <img src="frontend/assets/img/point4spinLogo.png" alt="Point4 Spin">
+                        </a>
+                        <p>Das interaktive Event-Glücksrad für Messen, Roadshows und Promotion-Aktionen. Powered by Point4 Studios.</p>
+                    </div>
+                    <div class="landing-footer-col">
+                        <h4>Produkt</h4>
+                        <ul>
+                            <li><a href="#use-cases">Einsatzbereiche</a></li>
+                            <li><a href="#benefits">Vorteile</a></li>
+                            <li><a href="#pricing">Preise</a></li>
+                            <li><a href="#contact">Demo anfragen</a></li>
+                        </ul>
+                    </div>
+                    <div class="landing-footer-col">
+                        <h4>Unternehmen</h4>
+                        <ul>
+                            <li><a href="https://www.point4studios.at" target="_blank">Über uns</a></li>
+                            <li><a href="https://www.point4studios.at" target="_blank">Kontakt</a></li>
+                            <li><a href="https://www.point4studios.at" target="_blank">Impressum</a></li>
+                        </ul>
+                    </div>
+                    <div class="landing-footer-col">
+                        <h4>Rechtliches</h4>
+                        <ul>
+                            <li><a href="https://www.point4studios.at" target="_blank">Datenschutz</a></li>
+                            <li><a href="https://www.point4studios.at" target="_blank">AGB</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="landing-footer-bottom">
+                    <p>
+                        <a href="https://www.point4studios.at" target="_blank" class="landing-footer-copy-link">© <span class="landing-footer-year">{{ new Date().getFullYear() }}</span> Point4 Studios</a>
+                        <span class="landing-footer-rights">Alle Rechte vorbehalten.</span>
+                    </p>
+                    <div class="landing-footer-social">
+                        <a href="https://www.linkedin.com/company/point4-studios/" target="_blank" aria-label="LinkedIn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        </a>
+                        <a href="https://www.instagram.com/point4studios/" target="_blank" aria-label="Instagram">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+</template>
+
+    <template id="dashboard-template">
         <div class="admin-page" v-if="isAuthenticated">
             <!-- Sticky Header -->
             <header class="admin-header-bar">
@@ -258,7 +1051,7 @@
                         <img :src="formSettings.logo || 'doveLogo.png'" class="admin-header-logo" alt="Logo">
                         <div class="admin-header-title">
                             <h1>{{ formSettings.wheel_title || 'Glücksrad' }}</h1>
-                            <span>Event Management</span>
+                            <span>Dashboard</span>
                         </div>
                     </div>
                     <div class="admin-header-actions">
@@ -266,9 +1059,9 @@
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                             Speichern
                         </button>
-                        <button class="btn-ghost" @click="showQrModal = true">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                            <span>QR-Code</span>
+                        <button class="btn-ghost" :class="{ active: leadCaptureEnabled }" @click="formSettings.lead_capture_enabled = leadCaptureEnabled ? '0' : '1'" title="Lead-Erfassung vor dem Drehen aktivieren/deaktivieren">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            <span>Lead-Erfassung {{ leadCaptureEnabled ? 'an' : 'aus' }}</span>
                         </button>
                         <button class="btn-ghost" @click="openPasswordModal">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -277,6 +1070,10 @@
                         <button class="btn-ghost" @click="goToWebsite">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                             <span>Zur Webseite</span>
+                        </button>
+                        <button v-if="user.role === 'super_admin'" class="btn-ghost" @click="navigateTo('#/settings')" title="Einstellungen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            <span>Einstellungen</span>
                         </button>
                         <button class="btn-ghost danger" @click="logout">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -475,6 +1272,112 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Lead-Statistiken -->
+                            <div class="admin-card" style="margin-bottom: 20px;" v-if="stats.lead_stats">
+                                <div class="admin-card-header">
+                                    <div class="section-header-row">
+                                        <div>
+                                            <h2>Lead-Statistiken</h2>
+                                            <p>Übersicht über erfasste Kontakte und Conversion</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="admin-card-body">
+                                    <div class="lead-stats-grid">
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.lead_count }}</div>
+                                            <div class="lead-stat-label">Leads erfasst</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.conversion_rate }}%</div>
+                                            <div class="lead-stat-label">Conversion-Rate</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_with_lead }}</div>
+                                            <div class="lead-stat-label">Drehungen mit Lead</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_without_lead }}</div>
+                                            <div class="lead-stat-label">Drehungen ohne Lead</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Leads -->
+                            <div class="admin-card" style="margin-bottom: 20px;">
+                                <div class="admin-card-header">
+                                    <div class="section-header-row">
+                                        <div>
+                                            <h2>Leads</h2>
+                                            <p>Erfasste Kontakte vor dem Drehen</p>
+                                        </div>
+                                        <div class="lead-header-actions">
+                                            <button class="btn-ghost btn-export" @click="exportLeadsCSV" v-if="formattedLeads.length > 0" title="Leads als CSV exportieren">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                <span>CSV Export</span>
+                                            </button>
+                                            <span class="lead-count-badge" v-if="formattedLeads.length > 0">{{ formattedLeads.length }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="admin-card-body" style="padding: 0;">
+                                    <div class="spin-history-wrap">
+                                        <table class="spin-history-table leads-table" v-if="formattedLeads.length > 0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Name</th>
+                                                    <th>E-Mail</th>
+                                                    <th>Gewinn</th>
+                                                    <th>Einwilligung</th>
+                                                    <th>Datum</th>
+                                                    <th>Uhrzeit</th>
+                                                    <th>Aktionen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(lead, idx) in formattedLeads" :key="lead.id">
+                                                    <td class="num">{{ idx + 1 }}</td>
+                                                    <td class="lead-name">{{ lead.name }}</td>
+                                                    <td class="lead-email">{{ lead.email }}</td>
+                                                    <td class="lead-prize">{{ lead.prize || '-' }}</td>
+                                                    <td class="lead-consent">
+                                                        <span class="consent-badge" :class="lead.consent_given ? 'given' : 'missing'">
+                                                            {{ lead.consent_given ? 'Ja' : 'Nein' }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="lead-date">{{ lead.date }}</td>
+                                                    <td class="lead-time">{{ lead.time }}</td>
+                                                    <td class="lead-actions">
+                                                        <button class="icon-btn danger" @click="deleteLead(lead.id)" title="Löschen">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div v-else class="spin-history-empty">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                            <p>Noch keine Leads erfasst</p>
+                                            <p class="lead-hint" v-if="!leadCaptureEnabled">Aktiviere die Lead-Erfassung im Header, um Daten zu sammeln.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -583,6 +1486,41 @@
                     </div>
                 </div>
 
+                <!-- Gewinn-E-Mail -->
+                <div class="admin-card" style="margin-bottom: 32px;">
+                    <div class="admin-card-header">
+                        <h2>Gewinn-E-Mail</h2>
+                        <p>Automatische E-Mail-Benachrichtigung an Gewinner</p>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="email-settings-grid">
+                            <div class="toggle-row" style="padding: 0 0 16px 0; border-bottom: 1px solid #F1F5F9; margin-bottom: 16px;">
+                                <div>
+                                    <div class="toggle-label">Gewinn-E-Mail automatisch versenden</div>
+                                    <div class="toggle-hint">Der Gewinner erhält nach dem Drehen eine E-Mail.</div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" v-model="formSettings.winner_email_enabled" :true-value="'1'" :false-value="'0'">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Absender-E-Mail</label>
+                                <input type="email" class="admin-input" v-model="formSettings.winner_email_sender" placeholder="noreply@point4spin.at">
+                            </div>
+                            <div class="admin-form-group">
+                                <label>Betreff</label>
+                                <input type="text" class="admin-input" v-model="formSettings.winner_email_subject">
+                            </div>
+                            <div class="admin-form-group" style="grid-column: 1 / -1;">
+                                <label>E-Mail-Text</label>
+                                <textarea class="admin-textarea" v-model="formSettings.winner_email_body" rows="8"></textarea>
+                                <p class="form-hint">Verfügbare Platzhalter: {{name}}, {{email}}, {{prize}}, {{win_text}}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Footer hint -->
                 <div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; color: #94A3B8; font-size: 0.8rem;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -659,24 +1597,24 @@
                                 </label>
                             </div>
                         </div>
+                        <div v-if="canEditSegmentImage" class="admin-form-group segment-image-editor-group">
+                            <label>Bild positionieren</label>
+                            <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 6px;">💡 Bild mit der Maus verschieben, Rotation mit dem Slider justieren</div>
+                            <segment-image-editor
+                                :segment="segmentForm"
+                                :segment-count="segmentEditorCount"
+                                :segment-index="segmentEditorIndex"
+                                v-model:offset-x="segmentImageOffsetX"
+                                v-model:offset-y="segmentImageOffsetY"
+                                v-model:rotation="segmentImageRotation"
+                                v-model:scale="segmentImageScale"
+                            ></segment-image-editor>
+                        </div>
                         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
                             <button type="button" class="btn-ghost" @click="showSegmentModal = false">Abbrechen</button>
                             <button type="submit" class="btn-gold">Speichern</button>
                         </div>
                     </form>
-                </div>
-            </div>
-
-            <!-- QR-Code Modal -->
-            <div v-if="showQrModal" class="modal-overlay" @click.self="showQrModal = false">
-                <div class="modal-content" style="max-width: 360px; text-align: center;">
-                    <div class="modal-header">
-                        <h3>QR-Code zur Event-Seite</h3>
-                        <button class="modal-close" @click="showQrModal = false">&times;</button>
-                    </div>
-                    <img :src="qrCodeUrl" alt="QR-Code" style="width: 200px; height: 200px; margin: 10px auto; display: block;">
-                    <p style="color: #64748B; font-size: 0.85rem; margin-bottom: 16px;">Scanne den Code, um direkt zur Event-Seite zu gelangen.</p>
-                    <button class="btn-ghost" @click="showQrModal = false" style="width: 100%;">Schließen</button>
                 </div>
             </div>
 
@@ -756,17 +1694,211 @@
         </div>
     </template>
 
+    <template id="settings-template">
+        <div class="superadmin-page">
+            <header class="superadmin-header">
+                <div class="superadmin-header-left">
+                    <a href="#/" class="superadmin-header-logo">
+                        <img src="frontend/assets/img/point4spinLogo.png" alt="Point4 Spin">
+                    </a>
+                    <div class="superadmin-header-title">
+                        <span class="superadmin-header-brand">Point4 Spin</span>
+                        <span class="superadmin-header-subtitle">Einstellungen</span>
+                    </div>
+                </div>
+                <div class="superadmin-header-right">
+                    <div class="settings-header-profile">
+                        <span class="settings-header-email">{{ currentUser.email }}</span>
+                        <span class="settings-header-role">Super Admin</span>
+                    </div>
+                    <button class="superadmin-logout" @click="logout">Abmelden</button>
+                </div>
+            </header>
+            <main class="superadmin-main">
+                <div class="superadmin-hero">
+                    <div class="superadmin-hero-content">
+                        <h1>Willkommen im Admin-Bereich</h1>
+                        <p>Verwalte hier deine Kunden und dein Profil.</p>
+                    </div>
+                    <div class="superadmin-hero-glow"></div>
+                </div>
+                <!-- Eigenes Profil -->
+                <div class="superadmin-section">
+                    <div class="superadmin-section-header">
+                        <h2>Mein Profil</h2>
+                    </div>
+                    <div class="settings-profile">
+                        <div class="settings-profile-info">
+                            <div class="settings-profile-email">{{ currentUser.email }}</div>
+                            <div class="settings-profile-role">Super Admin</div>
+                        </div>
+                        <div class="settings-profile-actions">
+                            <button class="dashboard-btn" @click="openOwnEmailModal">E-Mail ändern</button>
+                            <button class="dashboard-btn" @click="openOwnPasswordModal">Passwort ändern</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kundenverwaltung -->
+                <div class="superadmin-section">
+                    <div class="superadmin-section-header">
+                        <h2>Kundenverwaltung</h2>
+                        <button class="dashboard-btn dashboard-btn-primary" @click="openCustomerModal()">+ Kunde anlegen</button>
+                    </div>
+                    <table class="superadmin-table">
+                        <thead>
+                            <tr><th>Firma</th><th>Kontakt</th><th>E-Mail</th><th>Subdomain</th><th>Status</th><th>Drehungen</th><th>Aktionen</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="c in customers" :key="c.id">
+                                <td>{{ c.company_name }}</td>
+                                <td>{{ c.contact_name }}</td>
+                                <td>{{ c.email }}</td>
+                                <td>{{ c.subdomain }}</td>
+                                <td><span :class="'status-badge ' + (c.is_active ? 'active' : 'inactive')">{{ c.is_active ? 'Aktiv' : 'Inaktiv' }}</span></td>
+                                <td>{{ c.spin_count }}</td>
+                                <td>
+                                    <button class="superadmin-icon-btn" @click="openCustomerModal(c)" title="Bearbeiten">✎</button>
+                                    <button class="superadmin-icon-btn" @click="toggleCustomer(c)" :title="c.is_active ? 'Deaktivieren' : 'Aktivieren'">{{ c.is_active ? '⏻' : '⏼' }}</button>
+                                    <button class="superadmin-icon-btn superadmin-icon-btn-danger" @click="openConfirm(c)" title="Löschen">🗑</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+
+            <!-- Kunde Modal -->
+            <div v-if="showCustomerModal" class="modal-overlay" @click.self="showCustomerModal = false">
+                <div class="modal-card">
+                    <h3>{{ editingCustomer ? 'Kunde bearbeiten' : 'Neuer Kunde' }}</h3>
+                    <div class="modal-field">
+                        <label>Firmenname</label>
+                        <input type="text" v-model="customerForm.company_name" placeholder="Unternehmen GmbH">
+                    </div>
+                    <div class="modal-field">
+                        <label>Kontaktperson</label>
+                        <input type="text" v-model="customerForm.contact_name" placeholder="Max Mustermann">
+                    </div>
+                    <div class="modal-field">
+                        <label>E-Mail (Login für den Kunden)</label>
+                        <input type="email" v-model="customerForm.email" placeholder="kunde@unternehmen.at">
+                    </div>
+                    <div class="modal-field">
+                        <label>Subdomain (optional)</label>
+                        <input type="text" v-model="customerForm.subdomain" placeholder="unternehmen">
+                    </div>
+                    <div class="modal-actions">
+                        <button class="dashboard-btn" @click="showCustomerModal = false">Abbrechen</button>
+                        <button class="dashboard-btn dashboard-btn-primary" @click="saveCustomer" :disabled="savingCustomer">
+                            {{ savingCustomer ? 'Wird gespeichert...' : 'Speichern' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lösch-Bestätigung Modal -->
+            <div v-if="showConfirmModal" class="modal-overlay" @click.self="cancelDelete">
+                <div class="modal-card modal-card-confirm">
+                    <h3>Kunde löschen</h3>
+                    <p class="confirm-text">
+                        Möchten Sie <strong>{{ confirmCustomer ? confirmCustomer.company_name : '' }}</strong> wirklich löschen?
+                        <span class="confirm-warning">Alle zugehörigen Benutzer, Segmente, Einstellungen und Drehungen werden ebenfalls gelöscht.</span>
+                    </p>
+                    <div class="modal-actions">
+                        <button class="dashboard-btn" @click="cancelDelete">Abbrechen</button>
+                        <button class="dashboard-btn dashboard-btn-danger" @click="confirmDelete">Löschen</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zugangsdaten Benachrichtigung Modal -->
+            <div v-if="showCredentialsModal" class="modal-overlay" @click.self="closeCredentialsModal">
+                <div class="modal-card modal-card-credentials">
+                    <h3>{{ newCredentials.error ? 'Kunde angelegt – E-Mail-Fehler' : 'Kunde angelegt' }}</h3>
+                    <p v-if="!newCredentials.error" class="modal-subtitle">
+                        Die Zugangsdaten wurden an folgende E-Mail-Adresse gesendet:
+                    </p>
+                    <p v-else class="modal-subtitle" style="color: #991B1B;">
+                        Der Kunde wurde angelegt, aber die E-Mail mit den Zugangsdaten konnte nicht gesendet werden.
+                    </p>
+                    <div class="credentials-box">
+                        <div class="credential-row">
+                            <span class="credential-label">E-Mail:</span>
+                            <span class="credential-value">{{ newCredentials.email }}</span>
+                        </div>
+                        <div v-if="newCredentials.error" class="credential-row" style="background: #FEF2F2; border-radius: 8px; padding: 12px; margin-top: 12px;">
+                            <span class="credential-label" style="color: #991B1B;">Fehler:</span>
+                            <span class="credential-value" style="color: #7F1D1D; font-size: 0.85rem;">{{ newCredentials.error }}</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button v-if="!newCredentials.error" class="dashboard-btn" @click="copyEmail">E-Mail-Adresse kopieren</button>
+                        <button class="dashboard-btn dashboard-btn-primary" @click="closeCredentialsModal">Verstanden</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E-Mail ändern Modal -->
+            <div v-if="showOwnEmailModal" class="modal-overlay" @click.self="closeOwnEmailModal">
+                <div class="modal-card">
+                    <h3>E-Mail-Adresse ändern</h3>
+                    <div class="modal-field">
+                        <label>Neue E-Mail-Adresse</label>
+                        <input type="email" v-model="ownEmailForm.email" placeholder="name@unternehmen.at">
+                    </div>
+                    <div v-if="ownEmailError" class="form-error" style="margin-bottom: 12px;">{{ ownEmailError }}</div>
+                    <div class="modal-actions">
+                        <button class="dashboard-btn" @click="closeOwnEmailModal">Abbrechen</button>
+                        <button class="dashboard-btn dashboard-btn-primary" @click="saveOwnEmail">E-Mail speichern</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eigenes Passwort ändern Modal -->
+            <div v-if="showOwnPasswordModal" class="modal-overlay" @click.self="closeOwnPasswordModal">
+                <div class="modal-card">
+                    <h3>Mein Passwort ändern</h3>
+                    <div class="modal-field">
+                        <label>Aktuelles Passwort</label>
+                        <input type="password" v-model="ownPasswordForm.current_password" placeholder="Aktuelles Passwort">
+                    </div>
+                    <div class="modal-field">
+                        <label>Neues Passwort</label>
+                        <input type="password" v-model="ownPasswordForm.new_password" placeholder="Mindestens 8 Zeichen">
+                    </div>
+                    <div class="modal-field">
+                        <label>Passwort wiederholen</label>
+                        <input type="password" v-model="ownPasswordForm.confirm_password" placeholder="Passwort wiederholen">
+                    </div>
+                    <div class="modal-actions">
+                        <button class="dashboard-btn" @click="closeOwnPasswordModal">Abbrechen</button>
+                        <button class="dashboard-btn dashboard-btn-primary" @click="saveOwnPassword">Passwort speichern</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toast-container">
+                <div v-for="toast in toasts" :key="toast.id" :class="'toast toast-' + toast.type">{{ toast.msg }}</div>
+            </div>
+        </div>
+    </template>
+
+    
+
     <!-- Modularisierte Scripts -->
-    <script src="frontend/js/config.js?v=27"></script>
-    <script src="frontend/js/utils/api.js?v=27"></script>
-    <script src="frontend/js/utils/sounds.js?v=27"></script>
-    <script src="frontend/js/utils/confetti.js?v=27"></script>
-    <script src="frontend/js/utils/spinAnimation.js?v=27"></script>
-    <script src="frontend/js/utils/auth.js?v=27"></script>
-    <script src="frontend/js/components/WheelComponent.js?v=27"></script>
-    <script src="frontend/js/pages/EventPage.js?v=27"></script>
-    <script src="frontend/js/pages/LoginPage.js?v=27"></script>
-    <script src="frontend/js/pages/AdminPage.js?v=27"></script>
-    <script src="frontend/js/app.js?v=28"></script>
+    <script src="frontend/js/config.js?v=112"></script>
+    <script src="frontend/js/utils/api.js?v=112"></script>
+    <script src="frontend/js/utils/sounds.js?v=112"></script>
+    <script src="frontend/js/utils/confetti.js?v=112"></script>
+    <script src="frontend/js/utils/spinAnimation.js?v=112"></script>
+    <script src="frontend/js/utils/auth.js?v=112"></script>
+    <script src="frontend/js/components/WheelComponent.js?v=112"></script>
+    <script src="frontend/js/components/SegmentImageEditor.js?v=112"></script>
+    <script src="frontend/js/pages/EventPage.js?v=112"></script>
+    <script src="frontend/js/pages/LandingPage.js?v=112"></script>
+    <script src="frontend/js/pages/SettingsPage.js?v=112"></script>
+    <script src="frontend/js/pages/DashboardPage.js?v=112"></script>
+    <script src="frontend/js/app.js?v=112"></script>
 </body>
 </html>

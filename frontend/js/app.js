@@ -1,43 +1,56 @@
 // Vue global build - keine Destrukturierung nötig
 
 const routes = {
+    '#/': LandingPage,
+    '#/login': LandingPage,
+    '#/dashboard': DashboardPage,
+    '#/settings': SettingsPage,
+    '#/superadmin': SettingsPage,
     '#/event': EventPage,
-    '#/login': LoginPage,
-    '#/admin': AdminPage,
 };
 
-// Event-Seite ist öffentlich (Teilnehmer dürfen drehen), nur Admin ist geschützt
-const protectedRoutes = ['#/admin'];
+// Geschützte Bereiche
+const protectedRoutes = ['#/dashboard', '#/settings'];
 
 const App = {
     setup() {
-        const currentRoute = Vue.ref(window.location.hash || '#/login');
+        const currentRoute = Vue.ref(window.location.hash || '#/');
         const isAuthenticated = Vue.ref(false);
         const authChecked = Vue.ref(false);
+        const userRole = Vue.ref('');
 
         const checkRouteAuth = async () => {
-            const hash = window.location.hash || '#/login';
+            const hash = window.location.hash || '#/';
             const needsAuth = protectedRoutes.includes(hash);
-            
+
             if (needsAuth) {
                 try {
                     const res = await api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth);
                     isAuthenticated.value = res.authenticated;
+                    userRole.value = res.user?.role || '';
                     if (!res.authenticated) {
-                        window.location.hash = '#/login';
-                        currentRoute.value = '#/login';
+                        window.location.hash = '#/';
+                        currentRoute.value = '#/';
                         authChecked.value = true;
                         return;
                     }
+                    // Einstellungen nur für Super Admin
+                    if (hash === '#/settings' && res.user?.role !== 'super_admin') {
+                        window.location.hash = '#/dashboard';
+                        currentRoute.value = '#/dashboard';
+                        authChecked.value = true;
+                        return;
+                    }
+
                 } catch (e) {
                     isAuthenticated.value = false;
-                    window.location.hash = '#/login';
-                    currentRoute.value = '#/login';
+                    window.location.hash = '#/';
+                    currentRoute.value = '#/';
                     authChecked.value = true;
                     return;
                 }
             }
-            
+
             isAuthenticated.value = true;
             currentRoute.value = hash;
             authChecked.value = true;
@@ -48,7 +61,7 @@ const App = {
 
         const currentComponent = Vue.computed(() => {
             if (!authChecked.value) return null;
-            return routes[currentRoute.value] || routes['#/login'];
+            return routes[currentRoute.value] || routes['#/'];
         });
 
         const hashChangeHandler = () => {
@@ -84,11 +97,15 @@ app.directive('click-outside', {
 
 app.mount('#app');
 
-// Service Worker deaktivieren (verhindert Cache-Probleme bei Live-Events)
+// Service Worker registrieren für PWA-Support (Add to Homescreen)
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-            registration.unregister();
-        }
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+                console.log('Service Worker registriert:', registration.scope);
+            })
+            .catch((error) => {
+                console.log('Service Worker Registrierung fehlgeschlagen:', error);
+            });
     });
 }

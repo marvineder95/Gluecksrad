@@ -31,7 +31,7 @@ const LoginPage = {
                     if (res.csrf_token) {
                         localStorage.setItem('csrf_token', res.csrf_token);
                     }
-                    navigateTo('#/admin');
+                    navigateTo('#/dashboard');
                 } else {
                     error.value = res.error || 'Login fehlgeschlagen';
                 }

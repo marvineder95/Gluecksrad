@@ -107,9 +107,34 @@ function jsonResponse($data, $status = 200) {
 }
 
 // === Auth: Session ODER Bearer Token ===
+function loadUserSessionFromToken($token) {
+    $db = getDB();
+    $stmt = $db->prepare("SELECT id, email, role, customer_id, api_token_expires_at, is_active FROM users WHERE api_token = ?");
+    $stmt->execute([$token]);
+    $user = $stmt->fetch();
+    if (!$user) return false;
+    if (empty($user['is_active'])) {
+        return false;
+    }
+    $expiresAt = $user['api_token_expires_at'] ?? null;
+    if ($expiresAt && strtotime($expiresAt) < time()) {
+        $stmt = $db->prepare("UPDATE users SET api_token = NULL, api_token_expires_at = NULL WHERE id = ?");
+        $stmt->execute([$user['id']]);
+        return false;
+    }
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['customer_id'] = $user['customer_id'];
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return true;
+}
+
 function requireAuth() {
     session_start();
-    $sessionValid = !empty($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
+    $sessionValid = !empty($_SESSION['user_id']) && !empty($_SESSION['user_role']);
 
     if ($sessionValid) {
         return true;
@@ -119,29 +144,122 @@ function requireAuth() {
     $authHeader = getRequestHeader('Authorization');
     $token = str_replace('Bearer ', '', $authHeader);
 
-    if (!empty($token)) {
-        $db = getDB();
-        $stmt = $db->prepare("SELECT id, username, api_token_expires_at FROM users WHERE api_token = ?");
-        $stmt->execute([$token]);
-        $user = $stmt->fetch();
-        if ($user) {
-            // Prüfen ob Token abgelaufen ist
-            $expiresAt = $user['api_token_expires_at'] ?? null;
-            if ($expiresAt && strtotime($expiresAt) < time()) {
-                // Abgelaufenen Token ungültig machen
-                $stmt = $db->prepare("UPDATE users SET api_token = NULL, api_token_expires_at = NULL WHERE id = ?");
-                $stmt->execute([$user['id']]);
-                jsonResponse(['error' => 'Token abgelaufen. Bitte erneut anmelden.'], 401);
-            }
-            $_SESSION['admin_logged_in'] = true;
-            $_SESSION['admin_id'] = $user['id'];
-            $_SESSION['admin_username'] = $user['username'];
-            $_SESSION['api_token_expires_at'] = $expiresAt;
-            return true;
-        }
+    if (!empty($token) && loadUserSessionFromToken($token)) {
+        return true;
     }
 
     jsonResponse(['error' => 'Nicht autorisiert'], 401);
+}
+
+function requireSuperAdmin() {
+    requireAuth();
+    if ($_SESSION['user_role'] !== 'super_admin') {
+        jsonResponse(['error' => 'Zugriff verweigert'], 403);
+    }
+}
+
+function requireCustomerAdmin() {
+    requireAuth();
+    if ($_SESSION['user_role'] !== 'customer_admin' && $_SESSION['user_role'] !== 'super_admin') {
+        jsonResponse(['error' => 'Zugriff verweigert'], 403);
+    }
+    if ($_SESSION['user_role'] === 'customer_admin' && empty($_SESSION['customer_id'])) {
+        jsonResponse(['error' => 'Kunde nicht zugeordnet'], 403);
+    }
+}
+
+function getCurrentUserId() {
+    return intval($_SESSION['user_id'] ?? 0);
+}
+
+function getCurrentUserEmail() {
+    return $_SESSION['user_email'] ?? '';
+}
+
+function getCurrentRole() {
+    return $_SESSION['user_role'] ?? '';
+}
+
+function getCurrentCustomerId() {
+    session_start();
+    $role = getCurrentRole();
+
+    if ($role === 'super_admin') {
+        // Super Admin kann optional einen Kunden auswählen
+        $requestedCustomerId = intval($_GET['customer_id'] ?? 0);
+        if ($requestedCustomerId > 0) {
+            return $requestedCustomerId;
+        }
+        return null;
+    }
+
+    if (!empty($_SESSION['customer_id'])) {
+        return intval($_SESSION['customer_id']);
+    }
+
+    // Öffentliche Endpunkte (z.B. Eventmodus) können Kunden per Query-Parameter wählen
+    $publicCustomerId = intval($_GET['customer_id'] ?? 0);
+    if ($publicCustomerId > 0) {
+        return $publicCustomerId;
+    }
+
+    // Fallback: Default-Kunde
+    return 1;
+}
+
+function isSuperAdmin() {
+    return getCurrentRole() === 'super_admin';
+}
+
+/**
+ * Liefert SQL WHERE-Fragment und Parameter für Mandantenfilter.
+ * Beispiel: list($where, $params) = getCustomerFilter('s');
+ * WHERE $where -> "s.customer_id = ?"
+ */
+function getCustomerFilter($tableAlias = '') {
+    $customerId = getCurrentCustomerId();
+    $prefix = $tableAlias ? $tableAlias . '.' : '';
+    if ($customerId === null) {
+        // Super Admin ohne Kundenauswahl: kein Filter
+        return ['1=1', []];
+    }
+    return [$prefix . 'customer_id = ?', [$customerId]];
+}
+
+/**
+ * Fügt Mandantenfilter zu einer bestehenden WHERE-Bedingung hinzu.
+ */
+function addCustomerFilter(&$where, &$params, $tableAlias = '') {
+    list($filterSql, $filterParams) = getCustomerFilter($tableAlias);
+    if ($filterSql !== '1=1') {
+        $where = $where ? "($where) AND $filterSql" : $filterSql;
+        $params = array_merge($params, $filterParams);
+    }
+}
+
+function requireCustomerContext() {
+    $customerId = getCurrentCustomerId();
+    if ($customerId === null || $customerId <= 0) {
+        jsonResponse(['error' => 'Kundenkontext erforderlich'], 400);
+    }
+    return $customerId;
+}
+
+function getCustomerUploadDir($type) {
+    $customerId = requireCustomerContext();
+    $dir = __DIR__ . '/../uploads/customer_' . $customerId . '/' . $type . '/';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
+function getCustomerUploadUrl($type, $filename) {
+    $customerId = getCurrentCustomerId();
+    if ($customerId === null || $customerId <= 0) {
+        return '';
+    }
+    return 'backend/uploads/customer_' . $customerId . '/' . $type . '/' . $filename;
 }
 
 // === CSRF-Token Validierung ===
@@ -215,30 +333,44 @@ function sanitizeText($text) {
     return htmlspecialchars(trim($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
+function sanitizePlainText($text) {
+    return trim($text);
+}
+
 // === Kampagnenstatus aktualisieren (kein GET-Seiteneffekt) ===
-function updateCampaignStatus($db) {
-    $stmt = $db->query("SELECT COUNT(*) as total FROM spin_pool");
+function updateCampaignStatus($db, $customerId = null) {
+    if ($customerId === null) {
+        $customerId = getCurrentCustomerId();
+    }
+    if ($customerId === null || $customerId <= 0) {
+        return;
+    }
+
+    $stmt = $db->prepare("SELECT COUNT(*) as total FROM spin_pool WHERE customer_id = ?");
+    $stmt->execute([$customerId]);
     $totalPool = intval($stmt->fetch()['total'] ?? 0);
-    
-    $stmt = $db->query("SELECT COUNT(*) as used FROM spin_pool WHERE is_used = 1");
+
+    $stmt = $db->prepare("SELECT COUNT(*) as used FROM spin_pool WHERE customer_id = ? AND is_used = 1");
+    $stmt->execute([$customerId]);
     $usedPool = intval($stmt->fetch()['used'] ?? 0);
-    
+
     $remaining = max(0, $totalPool - $usedPool);
-    
-    $stmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'campaign_status'");
+
+    $stmt = $db->prepare("SELECT setting_value FROM settings WHERE customer_id = ? AND setting_key = 'campaign_status'");
+    $stmt->execute([$customerId]);
     $row = $stmt->fetch();
     $currentStatus = $row ? $row['setting_value'] : 'running';
-    
+
     $newStatus = null;
     if ($remaining <= 0 && $totalPool > 0 && $currentStatus === 'running') {
         $newStatus = 'ended';
     } elseif ($remaining > 0 && $currentStatus === 'ended') {
         $newStatus = 'running';
     }
-    
+
     if ($newStatus !== null) {
-        $stmt = $db->prepare("INSERT OR REPLACE INTO settings (setting_key, setting_value) VALUES ('campaign_status', ?)");
-        $stmt->execute([$newStatus]);
+        $stmt = $db->prepare("INSERT OR REPLACE INTO settings (customer_id, setting_key, setting_value) VALUES (?, 'campaign_status', ?)");
+        $stmt->execute([$customerId, $newStatus]);
     }
 }
 

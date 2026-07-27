@@ -1,6 +1,7 @@
 # Datenbanken
 database/*.sqlite
 database/*.sqlite-journal
+database/*.backup*
 
 # Uploads (nur .htaccess behalten)
 backend/uploads/*
@@ -15,8 +16,12 @@ venv/
 
 # Logs & Temp
 *.log
+backend/logs/*.log
 .DS_Store
 node_modules/
 
 # Playwright logs
 .playwright-mcp/
+
+# Secrets
+backend/config/email.secret.php

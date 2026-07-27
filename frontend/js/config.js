@@ -7,7 +7,9 @@ const CONFIG = {
         segments: '/segments.php',
         settings: '/settings.php',
         spin: '/spin.php',
+        leads: '/leads.php',
         stats: '/stats.php',
+        admin_stats: '/admin_stats.php',
         auth: '/auth.php',
         themes: '/themes.php'
     },
@@ -22,7 +24,12 @@ const CONFIG = {
         segment_color: '#FF6B35',
         segment_weight: 100,
         logo_fallback: 'doveLogo.png',
-        theme: 'dove'
+        theme: 'dove',
+        lead_capture_enabled: '0',
+        winner_email_enabled: '0',
+        winner_email_subject: 'Herzlichen Glückwunsch zu deinem Gewinn!',
+        winner_email_body: 'Hallo {{name}},\n\nherzlichen Glückwunsch! Du hast beim Glücksrad gewonnen: {{prize}}.\n\n{{win_text}}\n\nViel Freude damit!',
+        winner_email_sender: 'noreply@point4spin.at'
     },
     ANIMATION: {
         confetti_particle_count: 200,

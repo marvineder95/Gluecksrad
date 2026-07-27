@@ -8,10 +8,19 @@ $migrations = [
     // 1. max_count zu segments hinzufügen
     "ALTER TABLE segments ADD COLUMN max_count INTEGER DEFAULT 0",
     
-    // 2. API-Token Ablaufzeit
+    // 2. Bild-Positionierungsfelder für Segment-Editor
+    "ALTER TABLE segments ADD COLUMN image_offset_x REAL DEFAULT 0",
+    "ALTER TABLE segments ADD COLUMN image_offset_y REAL DEFAULT 0",
+    "ALTER TABLE segments ADD COLUMN image_rotation REAL DEFAULT 0",
+    "ALTER TABLE segments ADD COLUMN image_scale REAL DEFAULT 1",
+
+    // 3. API-Token Ablaufzeit
     "ALTER TABLE users ADD COLUMN api_token_expires_at DATETIME",
+
+    // 3. Letzte Anmeldung für Benutzer
+    "ALTER TABLE users ADD COLUMN last_login_at DATETIME",
     
-    // 3. Performance-Indizes
+    // 4. Performance-Indizes
     "CREATE INDEX IF NOT EXISTS idx_users_api_token ON users(api_token)",
     "CREATE INDEX IF NOT EXISTS idx_spins_segment_id ON spins(segment_id)",
     "CREATE INDEX IF NOT EXISTS idx_spins_created_at ON spins(created_at)",
