@@ -31,6 +31,14 @@
                     <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="rgba(0,0,0,0.18)"/>
                     <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="rgba(0,0,0,0.1)"/>
                 </filter>
+                <!-- Neon glow for rim (Tech-Skin) -->
+                <filter id="rimGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge>
+                        <feMergeNode in="blur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
                 <!-- Gold rim gradients -->
                 <linearGradient id="goldRim1" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#F0E2B8"/>
@@ -57,10 +65,12 @@
             </defs>
 
             <!-- === OUTER PREMIUM RIM === -->
-            <circle v-if="accent" :cx="center" :cy="center" :r="radius + 18" fill="none" :stroke="accent" stroke-width="3" opacity="0.55"/>
-            <circle :cx="center" :cy="center" :r="radius + 14" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.rim_color" stroke-width="5" opacity="0.95"/>
-            <circle :cx="center" :cy="center" :r="radius + 10" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.rim_color" stroke-width="2" opacity="0.8"/>
-            <circle :cx="center" :cy="center" :r="radius + 7" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+            <g :filter="sk.rim_glow === '1' ? 'url(#rimGlow)' : null">
+                <circle v-if="accent" :cx="center" :cy="center" :r="radius + 18" fill="none" :stroke="accent" stroke-width="3" opacity="0.55"/>
+                <circle :cx="center" :cy="center" :r="radius + 14" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.rim_color" stroke-width="5" opacity="0.95"/>
+                <circle :cx="center" :cy="center" :r="radius + 10" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.rim_color" stroke-width="2" opacity="0.8"/>
+                <circle :cx="center" :cy="center" :r="radius + 7" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+            </g>
 
             <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
             <g v-if="segmentPaths.length > 0" filter="url(#segShadow)">
@@ -129,8 +139,8 @@
                 </text>
             </g>
 
-            <!-- === SEGMENT DIVIDERS (subtle gold lines between segments) === -->
-            <g v-if="segmentPaths.length > 0" v-for="(segment, index) in segmentPaths" :key="'div'+index" style="pointer-events: none;">
+            <!-- === SEGMENT DIVIDERS (subtle lines between segments; entfallen bei Lücke) === -->
+            <g v-if="segmentPaths.length > 0 && gapDeg === 0" v-for="(segment, index) in segmentPaths" :key="'div'+index" style="pointer-events: none;">
                 <line :x1="center" :y1="center"
                       :x2="center + radius * Math.cos((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
                       :y2="center + radius * Math.sin((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
@@ -141,6 +151,13 @@
             <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3" opacity="0.9"/>
             <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.hub_color" stroke-width="1.5" opacity="0.7"/>
             <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
+
+            <!-- === POINTER (bleibt oben, dreht mit Gegenrotation nicht mit) === -->
+            <g v-if="sk.pointer_enabled !== '0'" :transform="'rotate(' + (-(rotation || 0)) + ' ' + center + ' ' + center + ')'" style="pointer-events: none;">
+                <polygon :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)"
+                         :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"
+                         style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));"/>
+            </g>
         </svg>
     </template>
 
@@ -1278,6 +1295,39 @@
                                 <div class="branding-item" v-if="formSettings.segment_fill_mode === 'image'">
                                     <label>Abdunklung ({{ formSettings.overlay_strength }}%)</label>
                                     <input type="range" class="design-range" min="0" max="70" step="5" v-model="formSettings.overlay_strength">
+                                </div>
+                                <div class="branding-item">
+                                    <label>Rand-Glow (Neon)</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.rim_glow" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Segment-Abstand ({{ formSettings.segment_gap }}°)</label>
+                                    <input type="range" class="design-range" min="0" max="8" step="1" v-model="formSettings.segment_gap">
+                                </div>
+                                <div class="branding-item">
+                                    <label>Zeiger anzeigen</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.pointer_enabled" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.pointer_enabled === '1'">
+                                    <label>Zeigerfarbe</label>
+                                    <color-picker v-model="formSettings.pointer_color"></color-picker>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Hintergrund</label>
+                                    <select class="admin-select" v-model="formSettings.background_mode">
+                                        <option value="theme">Theme-Bild</option>
+                                        <option value="solid">Einfarbig</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.background_mode === 'solid'">
+                                    <label>Hintergrundfarbe</label>
+                                    <color-picker v-model="formSettings.background_color"></color-picker>
                                 </div>
                             </div>
                         </div>

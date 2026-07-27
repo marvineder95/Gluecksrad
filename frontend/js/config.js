@@ -40,7 +40,14 @@ const CONFIG = {
         label_enabled: '1',
         label_color: '#FFFFFF',
         label_scale: 1,               // Multiplikator der Label-Größe (0.7-1.4)
-        spin_button_text: 'Drehen'
+        spin_button_text: 'Drehen',
+        // Erweiterte Rad-Stil-Tokens (für Design-Presets)
+        pointer_enabled: '1',
+        pointer_color: '#C8A866',
+        rim_glow: '0',                // Neon-Glow am Rand (0/1)
+        segment_gap: 0,               // Lücke zwischen Segmenten in Grad (0-8)
+        background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
+        background_color: '#0F172A'
     },
     ANIMATION: {
         confetti_particle_count: 200,

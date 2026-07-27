@@ -7,9 +7,14 @@ const WheelComponent = {
         const DEFAULT_SKIN = {
             segment_fill_mode: 'image', rim_style: 'gold', rim_color: '#C8A866',
             hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
-            label_enabled: '1', label_color: '#FFFFFF', label_scale: 1
+            label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
+            pointer_enabled: '1', pointer_color: '#C8A866', rim_glow: '0', segment_gap: 0
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
+        const gapDeg = Vue.computed(() => {
+            const g = parseFloat(sk.value.segment_gap);
+            return isNaN(g) ? 0 : Math.max(0, Math.min(8, g));
+        });
         const overlayColor = Vue.computed(() => {
             const p = Math.max(0, Math.min(70, Number(sk.value.overlay_strength))) / 100;
             return 'rgba(0,0,0,' + p + ')';
@@ -70,16 +75,17 @@ const WheelComponent = {
             const center = centerValue.value;
             const radius = radiusValue.value;
             const anglePerSegment = 360 / count;
+            const gap = gapDeg.value;
             return props.segments.map((segment, index) => {
-                const startDeg = index * anglePerSegment;
-                const endDeg = (index + 1) * anglePerSegment;
+                const startDeg = index * anglePerSegment + gap / 2;
+                const endDeg = (index + 1) * anglePerSegment - gap / 2;
                 const startAngle = (startDeg - 90) * (Math.PI / 180);
                 const endAngle = (endDeg - 90) * (Math.PI / 180);
                 const x1 = center + radius * Math.cos(startAngle);
                 const y1 = center + radius * Math.sin(startAngle);
                 const x2 = center + radius * Math.cos(endAngle);
                 const y2 = center + radius * Math.sin(endAngle);
-                const largeArc = anglePerSegment > 180 ? 1 : 0;
+                const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
                 // Determine sweep direction: cross product tells us which side x2,y2 is on relative to x1,y1
                 const cross = (x1 - center) * (y2 - center) - (y1 - center) * (x2 - center);
                 const sweep = cross > 0 ? 1 : 0;
@@ -169,16 +175,17 @@ const WheelComponent = {
             const imageRadius = radius * IMAGE_FIT.RADIUS_RATIO * scale;
             const fontSize = Math.max(14, radius * 0.046 * scale);
 
+            const gap = gapDeg.value;
             return props.segments.map((segment, index) => {
-                const startDeg = index * anglePerSegmentDeg;
-                const endDeg = (index + 1) * anglePerSegmentDeg;
+                const startDeg = index * anglePerSegmentDeg + gap / 2;
+                const endDeg = (index + 1) * anglePerSegmentDeg - gap / 2;
                 const startAngle = (startDeg - 90) * (Math.PI / 180);
                 const endAngle = (endDeg - 90) * (Math.PI / 180);
                 const x1 = center + radius * Math.cos(startAngle);
                 const y1 = center + radius * Math.sin(startAngle);
                 const x2 = center + radius * Math.cos(endAngle);
                 const y2 = center + radius * Math.sin(endAngle);
-                const largeArc = anglePerSegmentDeg > 180 ? 1 : 0;
+                const largeArc = (endDeg - startDeg) > 180 ? 1 : 0;
                 const cross = (x1 - center) * (y2 - center) - (y1 - center) * (x2 - center);
                 const sweep = cross > 0 ? 1 : 0;
                 const path = 'M ' + center + ' ' + center + ' L ' + x1 + ' ' + y1 + ' A ' + radius + ' ' + radius + ' 0 ' + largeArc + ' ' + sweep + ' ' + x2 + ' ' + y2 + ' Z';
@@ -245,6 +252,7 @@ const WheelComponent = {
             sk,
             overlayColor,
             labelScale,
+            gapDeg,
             config: CONFIG
         };
     },
