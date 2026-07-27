@@ -1,5 +1,5 @@
 const WheelComponent = {
-    props: ['segments', 'rotation', 'size'],
+    props: ['segments', 'rotation', 'size', 'font', 'accent'],
     setup(props) {
         const svgRef = Vue.ref(null);
         const svgSize = Vue.computed(() => props.size || 600);

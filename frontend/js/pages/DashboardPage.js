@@ -1,5 +1,5 @@
 const DashboardPage = {
-    components: { WheelComponent, SegmentImageEditor },
+    components: { WheelComponent, SegmentImageEditor, ColorPicker },
     setup() {
         const isAuthenticated = Vue.ref(false);
         const user = Vue.ref({});
