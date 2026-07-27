@@ -34,8 +34,10 @@ $DEFAULTS = [
     'spin_button_text' => 'Drehen',
     'pointer_enabled' => '1',
     'pointer_color' => '#C8A866',
+    'pointer_style' => 'triangle',
     'rim_glow' => '0',
     'segment_gap' => '0',
+    'hub_style' => 'classic',
     'background_mode' => 'theme',
     'background_color' => '#0F172A'
 ];
@@ -74,8 +76,8 @@ if ($method === 'POST') {
                  'segment_fill_mode', 'rim_style', 'rim_color', 'hub_color',
                  'separator_color', 'overlay_strength', 'label_enabled',
                  'label_color', 'label_scale', 'spin_button_text',
-                 'pointer_enabled', 'pointer_color', 'rim_glow', 'segment_gap',
-                 'background_mode', 'background_color'];
+                 'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
+                 'segment_gap', 'hub_style', 'background_mode', 'background_color'];
     $plainTextKeys = ['winner_email_body'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {

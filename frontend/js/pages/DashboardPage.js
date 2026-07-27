@@ -102,8 +102,10 @@ const DashboardPage = {
                 spin_button_text: sets.spin_button_text || CONFIG.DEFAULTS.spin_button_text,
                 pointer_enabled: (sets.pointer_enabled === '0' || sets.pointer_enabled === 0) ? '0' : '1',
                 pointer_color: sets.pointer_color || CONFIG.DEFAULTS.pointer_color,
+                pointer_style: sets.pointer_style || CONFIG.DEFAULTS.pointer_style,
                 rim_glow: (sets.rim_glow === '1' || sets.rim_glow === 1) ? '1' : '0',
                 segment_gap: sets.segment_gap != null && sets.segment_gap !== '' ? sets.segment_gap : CONFIG.DEFAULTS.segment_gap,
+                hub_style: sets.hub_style || CONFIG.DEFAULTS.hub_style,
                 background_mode: sets.background_mode || CONFIG.DEFAULTS.background_mode,
                 background_color: sets.background_color || CONFIG.DEFAULTS.background_color
             };
@@ -284,30 +286,34 @@ const DashboardPage = {
                 segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#E2E8F0',
                 hub_color: '#CBD5E1', separator_color: '#FFFFFF', overlay_strength: 0,
                 label_enabled: '1', label_color: '#1E293B', label_scale: 0.95,
-                pointer_enabled: '1', pointer_color: '#64748B', rim_glow: '0', segment_gap: 0,
+                pointer_enabled: '1', pointer_color: '#64748B', pointer_style: 'triangle',
+                rim_glow: '0', segment_gap: 0, hub_style: 'ring',
                 background_mode: 'solid', background_color: '#F8FAFC',
                 font_family: 'Inter', primary_color: '#1E293B', secondary_color: '#CBD5E1', accent_color: '#94A3B8' } },
             { id: 'tech', name: 'Tech', swatch: '#22D3EE', values: {
                 segment_fill_mode: 'image', rim_style: 'solid', rim_color: '#22D3EE',
                 hub_color: '#22D3EE', separator_color: '#334155', overlay_strength: 60,
                 label_enabled: '1', label_color: '#E0F7FF', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#EC4899', rim_glow: '1', segment_gap: 0,
+                pointer_enabled: '1', pointer_color: '#EC4899', pointer_style: 'arrow',
+                rim_glow: '1', segment_gap: 0, hub_style: 'glow',
                 background_mode: 'solid', background_color: '#0B1120',
-                font_family: 'Roboto', primary_color: '#22D3EE', secondary_color: '#EC4899', accent_color: '#22D3EE' } },
+                font_family: 'Space Grotesk', primary_color: '#22D3EE', secondary_color: '#EC4899', accent_color: '#22D3EE' } },
             { id: 'glamour', name: 'Glamour', swatch: '#C8A866', values: {
                 segment_fill_mode: 'color', rim_style: 'gold', rim_color: '#C8A866',
                 hub_color: '#C8A866', separator_color: '#E8C87A', overlay_strength: 0,
                 label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#E8C87A', rim_glow: '0', segment_gap: 0,
+                pointer_enabled: '1', pointer_color: '#E8C87A', pointer_style: 'diamond',
+                rim_glow: '0', segment_gap: 0, hub_style: 'gem',
                 background_mode: 'solid', background_color: '#2A0E14',
                 font_family: 'Playfair Display', primary_color: '#E8C87A', secondary_color: '#7B2D3A', accent_color: '#E8C87A' } },
             { id: 'bubbly', name: 'Round / Bubbly', swatch: '#F472B6', values: {
                 segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#FBCFE8',
                 hub_color: '#FFFFFF', separator_color: '#FFFFFF', overlay_strength: 0,
                 label_enabled: '1', label_color: '#FFFFFF', label_scale: 1.1,
-                pointer_enabled: '1', pointer_color: '#F472B6', rim_glow: '0', segment_gap: 4,
+                pointer_enabled: '1', pointer_color: '#F472B6', pointer_style: 'tab',
+                rim_glow: '0', segment_gap: 4, hub_style: 'star',
                 background_mode: 'solid', background_color: '#FFF1F2',
-                font_family: 'Open Sans', primary_color: '#F472B6', secondary_color: '#FDE68A', accent_color: '#FB7185' } }
+                font_family: 'Fredoka', primary_color: '#F472B6', secondary_color: '#FDE68A', accent_color: '#FB7185' } }
         ];
         const applyPreset = (preset) => {
             Object.assign(formSettings.value, preset.values);
@@ -327,8 +333,10 @@ const DashboardPage = {
             label_scale: formSettings.value.label_scale,
             pointer_enabled: formSettings.value.pointer_enabled,
             pointer_color: formSettings.value.pointer_color,
+            pointer_style: formSettings.value.pointer_style,
             rim_glow: formSettings.value.rim_glow,
-            segment_gap: formSettings.value.segment_gap
+            segment_gap: formSettings.value.segment_gap,
+            hub_style: formSettings.value.hub_style
         }));
 
         // Segment modal
@@ -552,8 +560,10 @@ const DashboardPage = {
                 formData.append('spin_button_text', formSettings.value.spin_button_text);
                 formData.append('pointer_enabled', formSettings.value.pointer_enabled === '0' ? '0' : '1');
                 formData.append('pointer_color', formSettings.value.pointer_color);
+                formData.append('pointer_style', formSettings.value.pointer_style);
                 formData.append('rim_glow', formSettings.value.rim_glow === '1' ? '1' : '0');
                 formData.append('segment_gap', formSettings.value.segment_gap);
+                formData.append('hub_style', formSettings.value.hub_style);
                 formData.append('background_mode', formSettings.value.background_mode);
                 formData.append('background_color', formSettings.value.background_color);
                 if (logoFile.value) formData.append('logo', logoFile.value);

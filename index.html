@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="frontend/css/style.css?v=112">
     <link rel="stylesheet" href="frontend/css/landing-new.css?v=112">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
@@ -147,16 +147,55 @@
                       :stroke="sk.separator_color" stroke-width="1.5" opacity="0.5"/>
             </g>
 
-            <!-- === INNER RIM / HUB === -->
-            <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3" opacity="0.9"/>
-            <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.hub_color" stroke-width="1.5" opacity="0.7"/>
-            <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
+            <!-- === HUB (Mitte) – Form je nach hub_style === -->
+            <g v-if="sk.hub_style === 'classic'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3" opacity="0.9"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.hub_color" stroke-width="1.5" opacity="0.7"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
+            </g>
+            <g v-else-if="sk.hub_style === 'dot'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.12" :fill="sk.hub_color"/>
+                <circle :cx="center - radius*0.035" :cy="center - radius*0.035" :r="radius * 0.03" fill="rgba(255,255,255,0.55)"/>
+            </g>
+            <g v-else-if="sk.hub_style === 'ring'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.13" fill="#FFFFFF" :stroke="sk.hub_color" :stroke-width="radius*0.03"/>
+            </g>
+            <g v-else-if="sk.hub_style === 'glow'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.14" :fill="sk.hub_color" filter="url(#rimGlow)" opacity="0.9"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.07" fill="#0B1120"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.03" fill="#FFFFFF"/>
+            </g>
+            <g v-else-if="sk.hub_style === 'star'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.15" :fill="sk.hub_color"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="accent || sk.pointer_color" stroke-width="2" opacity="0.5"/>
+                <text :x="center" :y="center" text-anchor="middle" dominant-baseline="central" :font-size="radius * 0.17" :fill="accent || sk.pointer_color || '#F472B6'">★</text>
+            </g>
+            <g v-else-if="sk.hub_style === 'gem'" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3"/>
+                <circle :cx="center" :cy="center" :r="radius * 0.13" fill="#1A0A0F"/>
+                <text :x="center" :y="center" text-anchor="middle" dominant-baseline="central" :font-size="radius * 0.15" :fill="sk.hub_color">◆</text>
+            </g>
 
             <!-- === POINTER (bleibt oben, dreht mit Gegenrotation nicht mit) === -->
             <g v-if="sk.pointer_enabled !== '0'" :transform="'rotate(' + (-(rotation || 0)) + ' ' + center + ' ' + center + ')'" style="pointer-events: none;">
-                <polygon :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)"
-                         :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"
-                         style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));"/>
+                <g style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+                    <!-- triangle: breiter, scharfer Zeiger -->
+                    <polygon v-if="sk.pointer_style === 'triangle'"
+                             :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)"
+                             :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+                    <!-- tab: runde Lasche (Bubbly) -->
+                    <rect v-else-if="sk.pointer_style === 'tab'"
+                          :x="center - 12" :y="center - radius - 22" width="24" height="40" rx="12"
+                          :fill="sk.pointer_color" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <!-- arrow: schlanker, langer Pfeil (Tech) -->
+                    <polygon v-else-if="sk.pointer_style === 'arrow'"
+                             :points="(center - 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 6) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 7) + ',' + (center - radius - 6)"
+                             :fill="sk.pointer_color"/>
+                    <!-- diamond: Raute (Glamour) -->
+                    <polygon v-else-if="sk.pointer_style === 'diamond'"
+                             :points="center + ',' + (center - radius - 22) + ' ' + (center + 13) + ',' + (center - radius - 4) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 13) + ',' + (center - radius - 4)"
+                             :fill="sk.pointer_color" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+                </g>
             </g>
         </svg>
     </template>
@@ -1230,7 +1269,9 @@
                                 <select class="admin-select" v-model="formSettings.font_family">
                                     <option value="Montserrat">Montserrat</option>
                                     <option value="Inter">Inter</option>
-                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Playfair Display">Playfair Display (Serif)</option>
+                                    <option value="Space Grotesk">Space Grotesk (Tech)</option>
+                                    <option value="Fredoka">Fredoka (Rund)</option>
                                     <option value="Roboto">Roboto</option>
                                     <option value="Open Sans">Open Sans</option>
                                 </select>
@@ -1315,8 +1356,28 @@
                                     </label>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.pointer_enabled === '1'">
+                                    <label>Zeiger-Form</label>
+                                    <select class="admin-select" v-model="formSettings.pointer_style">
+                                        <option value="triangle">Dreieck</option>
+                                        <option value="tab">Runde Lasche</option>
+                                        <option value="arrow">Pfeil</option>
+                                        <option value="diamond">Raute</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.pointer_enabled === '1'">
                                     <label>Zeigerfarbe</label>
                                     <color-picker v-model="formSettings.pointer_color"></color-picker>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Naben-Form (Mitte)</label>
+                                    <select class="admin-select" v-model="formSettings.hub_style">
+                                        <option value="classic">Klassisch (Gold)</option>
+                                        <option value="dot">Punkt</option>
+                                        <option value="ring">Ring</option>
+                                        <option value="glow">Leuchtend (Tech)</option>
+                                        <option value="star">Stern</option>
+                                        <option value="gem">Diamant</option>
+                                    </select>
                                 </div>
                                 <div class="branding-item">
                                     <label>Hintergrund</label>

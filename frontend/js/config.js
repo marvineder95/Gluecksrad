@@ -44,8 +44,10 @@ const CONFIG = {
         // Erweiterte Rad-Stil-Tokens (für Design-Presets)
         pointer_enabled: '1',
         pointer_color: '#C8A866',
+        pointer_style: 'triangle',    // triangle | tab | arrow | diamond
         rim_glow: '0',                // Neon-Glow am Rand (0/1)
         segment_gap: 0,               // Lücke zwischen Segmenten in Grad (0-8)
+        hub_style: 'classic',         // classic | dot | ring | glow | star | gem
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
         background_color: '#0F172A'
     },

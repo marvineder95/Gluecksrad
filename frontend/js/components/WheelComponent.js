@@ -8,7 +8,8 @@ const WheelComponent = {
             segment_fill_mode: 'image', rim_style: 'gold', rim_color: '#C8A866',
             hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
             label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
-            pointer_enabled: '1', pointer_color: '#C8A866', rim_glow: '0', segment_gap: 0
+            pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',
+            rim_glow: '0', segment_gap: 0, hub_style: 'classic'
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
         const gapDeg = Vue.computed(() => {
