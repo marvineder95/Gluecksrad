@@ -1,7 +1,23 @@
 const WheelComponent = {
-    props: ['segments', 'rotation', 'size', 'font', 'accent'],
+    props: ['segments', 'rotation', 'size', 'font', 'accent', 'skin'],
     setup(props) {
         const svgRef = Vue.ref(null);
+
+        // Aufgelöste Design-Tokens (Skin) mit Defaults
+        const DEFAULT_SKIN = {
+            segment_fill_mode: 'image', rim_style: 'gold', rim_color: '#C8A866',
+            hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
+            label_enabled: '1', label_color: '#FFFFFF', label_scale: 1
+        };
+        const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
+        const overlayColor = Vue.computed(() => {
+            const p = Math.max(0, Math.min(70, Number(sk.value.overlay_strength))) / 100;
+            return 'rgba(0,0,0,' + p + ')';
+        });
+        const labelScale = Vue.computed(() => {
+            const s = parseFloat(sk.value.label_scale);
+            return isNaN(s) ? 1 : Math.max(0.6, Math.min(1.6, s));
+        });
         const svgSize = Vue.computed(() => props.size || 600);
         const centerValue = Vue.computed(() => svgSize.value / 2);
         const padding = CONFIG.WHEEL.svg_padding;
@@ -203,6 +219,7 @@ const WheelComponent = {
                 return {
                     name: segment.name,
                     image: segment.image,
+                    color: segment.color || CONFIG.DEFAULTS.segment_color,
                     theme,
                     path,
                     imageX: imageX + offsetX,
@@ -225,6 +242,9 @@ const WheelComponent = {
             clipPaths,
             textPaths,
             wheelStyle,
+            sk,
+            overlayColor,
+            labelScale,
             config: CONFIG
         };
     },

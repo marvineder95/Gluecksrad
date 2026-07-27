@@ -20,7 +20,18 @@ $DEFAULTS = [
     'winner_email_enabled' => '0',
     'winner_email_subject' => 'Herzlichen Glückwunsch zu deinem Gewinn!',
     'winner_email_body' => "Hallo {{name}},\n\nherzlichen Glückwunsch! Du hast beim Glücksrad gewonnen: {{prize}}.\n\n{{win_text}}\n\nViel Freude damit!",
-    'winner_email_sender' => 'noreply@point4spin.at'
+    'winner_email_sender' => 'noreply@point4spin.at',
+    // Design-Tokens
+    'segment_fill_mode' => 'image',
+    'rim_style' => 'gold',
+    'rim_color' => '#C8A866',
+    'hub_color' => '#C8A866',
+    'separator_color' => '#FFFFFF',
+    'overlay_strength' => '30',
+    'label_enabled' => '1',
+    'label_color' => '#FFFFFF',
+    'label_scale' => '1',
+    'spin_button_text' => 'Drehen'
 ];
 
 // GET /api/settings - Einstellungen abrufen
@@ -53,7 +64,10 @@ if ($method === 'POST') {
     $textKeys = ['primary_color', 'secondary_color', 'font_family', 'wheel_title',
                  'campaign_status', 'campaign_started_at', 'accent_color', 'theme',
                  'lead_capture_enabled', 'winner_email_enabled', 'winner_email_subject',
-                 'winner_email_sender'];
+                 'winner_email_sender',
+                 'segment_fill_mode', 'rim_style', 'rim_color', 'hub_color',
+                 'separator_color', 'overlay_strength', 'label_enabled',
+                 'label_color', 'label_scale', 'spin_button_text'];
     $plainTextKeys = ['winner_email_body'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {

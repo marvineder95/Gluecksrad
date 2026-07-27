@@ -88,7 +88,18 @@ const DashboardPage = {
                 winner_email_enabled: (sets.winner_email_enabled === '1' || sets.winner_email_enabled === 1 || sets.winner_email_enabled === true) ? '1' : '0',
                 winner_email_subject: sets.winner_email_subject || CONFIG.DEFAULTS.winner_email_subject,
                 winner_email_body: sets.winner_email_body || CONFIG.DEFAULTS.winner_email_body,
-                winner_email_sender: sets.winner_email_sender || CONFIG.DEFAULTS.winner_email_sender
+                winner_email_sender: sets.winner_email_sender || CONFIG.DEFAULTS.winner_email_sender,
+                // Design-Tokens
+                segment_fill_mode: sets.segment_fill_mode || CONFIG.DEFAULTS.segment_fill_mode,
+                rim_style: sets.rim_style || CONFIG.DEFAULTS.rim_style,
+                rim_color: sets.rim_color || CONFIG.DEFAULTS.rim_color,
+                hub_color: sets.hub_color || CONFIG.DEFAULTS.hub_color,
+                separator_color: sets.separator_color || CONFIG.DEFAULTS.separator_color,
+                overlay_strength: sets.overlay_strength != null && sets.overlay_strength !== '' ? sets.overlay_strength : CONFIG.DEFAULTS.overlay_strength,
+                label_enabled: (sets.label_enabled === '0' || sets.label_enabled === 0) ? '0' : '1',
+                label_color: sets.label_color || CONFIG.DEFAULTS.label_color,
+                label_scale: sets.label_scale != null && sets.label_scale !== '' ? sets.label_scale : CONFIG.DEFAULTS.label_scale,
+                spin_button_text: sets.spin_button_text || CONFIG.DEFAULTS.spin_button_text
             };
             // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
@@ -254,6 +265,43 @@ const DashboardPage = {
                 borderColor: formSettings.value.accent_color || 'transparent'
             };
         });
+
+        // Kuratierte Design-Presets (Basis, danach frei überschreibbar)
+        const designPresets = [
+            { id: 'gold', name: 'Premium Gold', swatch: '#C8A866', values: {
+                segment_fill_mode: 'image', rim_style: 'gold', rim_color: '#C8A866',
+                hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
+                label_enabled: '1', label_color: '#FFFFFF', label_scale: 1 } },
+            { id: 'minimal', name: 'Minimal Hell', swatch: '#E2E8F0', values: {
+                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#CBD5E1',
+                hub_color: '#94A3B8', separator_color: '#FFFFFF', overlay_strength: 0,
+                label_enabled: '1', label_color: '#1E293B', label_scale: 1 } },
+            { id: 'bold', name: 'Bold Farbe', swatch: '#EF4444', values: {
+                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#1E293B',
+                hub_color: '#1E293B', separator_color: '#FFFFFF', overlay_strength: 0,
+                label_enabled: '1', label_color: '#FFFFFF', label_scale: 1.1 } },
+            { id: 'dark', name: 'Dunkel', swatch: '#0F172A', values: {
+                segment_fill_mode: 'image', rim_style: 'solid', rim_color: '#0F172A',
+                hub_color: '#334155', separator_color: '#94A3B8', overlay_strength: 55,
+                label_enabled: '1', label_color: '#FFFFFF', label_scale: 1 } }
+        ];
+        const applyPreset = (preset) => {
+            Object.assign(formSettings.value, preset.values);
+            addToast('Preset "' + preset.name + '" angewendet');
+        };
+
+        // Design-Tokens (Skin) für das Vorschaurad aus dem aktuellen Formular
+        const previewSkin = Vue.computed(() => ({
+            segment_fill_mode: formSettings.value.segment_fill_mode,
+            rim_style: formSettings.value.rim_style,
+            rim_color: formSettings.value.rim_color,
+            hub_color: formSettings.value.hub_color,
+            separator_color: formSettings.value.separator_color,
+            overlay_strength: formSettings.value.overlay_strength,
+            label_enabled: formSettings.value.label_enabled,
+            label_color: formSettings.value.label_color,
+            label_scale: formSettings.value.label_scale
+        }));
 
         // Segment modal
         const openSegmentModal = (segment) => {
@@ -460,6 +508,17 @@ const DashboardPage = {
                 formData.append('winner_email_subject', formSettings.value.winner_email_subject);
                 formData.append('winner_email_body', formSettings.value.winner_email_body);
                 formData.append('winner_email_sender', formSettings.value.winner_email_sender);
+                // Design-Tokens
+                formData.append('segment_fill_mode', formSettings.value.segment_fill_mode);
+                formData.append('rim_style', formSettings.value.rim_style);
+                formData.append('rim_color', formSettings.value.rim_color);
+                formData.append('hub_color', formSettings.value.hub_color);
+                formData.append('separator_color', formSettings.value.separator_color);
+                formData.append('overlay_strength', formSettings.value.overlay_strength);
+                formData.append('label_enabled', formSettings.value.label_enabled === '0' ? '0' : '1');
+                formData.append('label_color', formSettings.value.label_color);
+                formData.append('label_scale', formSettings.value.label_scale);
+                formData.append('spin_button_text', formSettings.value.spin_button_text);
                 if (logoFile.value) formData.append('logo', logoFile.value);
                 if (bgFile.value) formData.append('background_image', bgFile.value);
 
@@ -634,6 +693,9 @@ const DashboardPage = {
             getThemeImage,
             getThemeName,
             previewBrandStyle,
+            previewSkin,
+            designPresets,
+            applyPreset,
             activeTab,
             segmentImageFile,
             segmentImageOffsetX,

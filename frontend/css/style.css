@@ -1383,6 +1383,66 @@ html {
     box-shadow: 0 0 0 2px var(--gold, #C8A866);
 }
 
+/* ===== Rad-Stil & Design Panel ===== */
+.design-section {
+    padding: 18px 0;
+    border-top: 1px solid #F1F5F9;
+}
+.design-section:first-child {
+    padding-top: 0;
+    border-top: none;
+}
+.design-section-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #94A3B8;
+    margin-bottom: 14px;
+}
+.design-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px 20px;
+    align-items: start;
+}
+.preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.preset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px solid #E2E8F0;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1E293B;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.preset-btn:hover {
+    border-color: var(--gold, #C8A866);
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+.preset-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 5px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+.design-range {
+    width: 100%;
+    accent-color: var(--gold, #C8A866);
+    cursor: pointer;
+}
+
 .preview-hint {
     display: flex;
     align-items: flex-start;

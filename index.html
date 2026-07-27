@@ -58,25 +58,27 @@
 
             <!-- === OUTER PREMIUM RIM === -->
             <circle v-if="accent" :cx="center" :cy="center" :r="radius + 18" fill="none" :stroke="accent" stroke-width="3" opacity="0.55"/>
-            <circle :cx="center" :cy="center" :r="radius + 14" fill="none" stroke="url(#goldRim1)" stroke-width="5" opacity="0.95"/>
-            <circle :cx="center" :cy="center" :r="radius + 10" fill="none" stroke="url(#goldRim2)" stroke-width="2" opacity="0.8"/>
+            <circle :cx="center" :cy="center" :r="radius + 14" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.rim_color" stroke-width="5" opacity="0.95"/>
+            <circle :cx="center" :cy="center" :r="radius + 10" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.rim_color" stroke-width="2" opacity="0.8"/>
             <circle :cx="center" :cy="center" :r="radius + 7" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
 
             <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
             <g v-if="segmentPaths.length > 0" filter="url(#segShadow)">
                 <g v-for="(segment, index) in segmentPaths" :key="'seg-' + index">
-                    <!-- Background image clipped to wedge shape -->
+                    <!-- Background: Theme-Bild ODER Segmentfarbe (fill_mode) -->
                     <g :clip-path="'url(#clip-' + index + ')'">
-                        <image :href="segment.theme.image"
+                        <image v-if="sk.segment_fill_mode !== 'color'" :href="segment.theme.image"
                                :x="center - radius" :y="center - radius"
                                :width="radius * 2" :height="radius * 2"
                                preserveAspectRatio="xMidYMid slice"/>
-                        <!-- Overlay for text readability -->
-                        <path :d="segment.path" :fill="segment.theme.overlay" style="pointer-events: none;"/>
+                        <path v-else :d="segment.path" :fill="segment.color" style="pointer-events: none;"/>
+                        <!-- Overlay for text readability (nur bei Bild-Modus) -->
+                        <path v-if="sk.segment_fill_mode !== 'color'" :d="segment.path" :fill="overlayColor" style="pointer-events: none;"/>
 
                         <!-- === SEGMENT TITLES (curved along outer edge) === -->
-                        <text :fill="segment.theme.textColor"
-                            :font-size="segment.fontSize"
+                        <text v-if="sk.label_enabled !== '0'"
+                            :fill="sk.label_color"
+                            :font-size="segment.fontSize * labelScale"
                             font-weight="700"
                             :font-family="(font || 'Montserrat') + ', sans-serif'"
                             style="text-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);">
@@ -100,8 +102,8 @@
                             </g>
                         </g>
                     </g>
-                    <!-- Subtle white separator stroke (NOT clipped, drawn on top of adjacent segments) -->
-                    <path :d="segment.path" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" style="pointer-events: none;"/>
+                    <!-- Subtle separator stroke (NOT clipped, drawn on top of adjacent segments) -->
+                    <path :d="segment.path" fill="none" :stroke="sk.separator_color" stroke-width="2" opacity="0.6" style="pointer-events: none;"/>
                 </g>
             </g>
 
@@ -132,12 +134,12 @@
                 <line :x1="center" :y1="center"
                       :x2="center + radius * Math.cos((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
                       :y2="center + radius * Math.sin((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
-                      stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+                      :stroke="sk.separator_color" stroke-width="1.5" opacity="0.5"/>
             </g>
 
-            <!-- === INNER RIM === -->
-            <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" stroke="url(#goldRim1)" stroke-width="3" opacity="0.9"/>
-            <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" stroke="url(#goldRim2)" stroke-width="1.5" opacity="0.7"/>
+            <!-- === INNER RIM / HUB === -->
+            <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3" opacity="0.9"/>
+            <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.hub_color" stroke-width="1.5" opacity="0.7"/>
             <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
         </svg>
     </template>
@@ -1109,10 +1111,10 @@
                                             VIEL GLÜCK!
                                         </div>
                                         <wheel-component :segments="segments" :rotation="previewRotation" :size="400"
-                                            :font="formSettings.font_family" :accent="formSettings.accent_color"></wheel-component>
+                                            :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin"></wheel-component>
                                         <button class="preview-stage-btn"
                                             :style="{ background: formSettings.primary_color, fontFamily: formSettings.font_family, boxShadow: '0 6px 18px ' + formSettings.secondary_color + '66' }">
-                                            Drehen
+                                            {{ formSettings.spin_button_text || 'Drehen' }}
                                         </button>
                                     </div>
                                 </div>
@@ -1225,6 +1227,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Rad-Stil & Design -->
+                <div class="admin-card branding-card" style="margin-bottom: 32px; overflow: visible;">
+                    <div class="admin-card-header">
+                        <h2>Rad-Stil &amp; Design</h2>
+                        <p>Preset als Basis wählen – alles darunter frei anpassbar</p>
+                    </div>
+                    <div class="admin-card-body">
+                        <!-- Presets -->
+                        <div class="design-section">
+                            <label class="design-section-label">Presets</label>
+                            <div class="preset-row">
+                                <button type="button" class="preset-btn" v-for="p in designPresets" :key="p.id" @click="applyPreset(p)">
+                                    <span class="preset-swatch" :style="{ background: p.swatch }"></span>{{ p.name }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Rad-Stil -->
+                        <div class="design-section">
+                            <label class="design-section-label">Rad-Stil</label>
+                            <div class="design-grid">
+                                <div class="branding-item">
+                                    <label>Segment-Füllung</label>
+                                    <select class="admin-select" v-model="formSettings.segment_fill_mode">
+                                        <option value="image">Theme-Bilder</option>
+                                        <option value="color">Segmentfarbe</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Rand-Stil</label>
+                                    <select class="admin-select" v-model="formSettings.rim_style">
+                                        <option value="gold">Gold (Premium)</option>
+                                        <option value="solid">Einfarbig</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.rim_style === 'solid'">
+                                    <label>Randfarbe</label>
+                                    <color-picker v-model="formSettings.rim_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.rim_style === 'solid'">
+                                    <label>Nabe (Mitte)</label>
+                                    <color-picker v-model="formSettings.hub_color"></color-picker>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Trennlinien</label>
+                                    <color-picker v-model="formSettings.separator_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.segment_fill_mode === 'image'">
+                                    <label>Abdunklung ({{ formSettings.overlay_strength }}%)</label>
+                                    <input type="range" class="design-range" min="0" max="70" step="5" v-model="formSettings.overlay_strength">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Beschriftung -->
+                        <div class="design-section">
+                            <label class="design-section-label">Beschriftung der Segmente</label>
+                            <div class="design-grid">
+                                <div class="branding-item">
+                                    <label>Beschriftung anzeigen</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.label_enabled" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1'">
+                                    <label>Textfarbe</label>
+                                    <color-picker v-model="formSettings.label_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1'">
+                                    <label>Textgröße ({{ Math.round(formSettings.label_scale * 100) }}%)</label>
+                                    <input type="range" class="design-range" min="0.7" max="1.4" step="0.05" v-model="formSettings.label_scale">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Texte -->
+                        <div class="design-section">
+                            <label class="design-section-label">Texte</label>
+                            <div class="design-grid">
+                                <div class="branding-item">
+                                    <label>Rad-Titel</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.wheel_title">
+                                </div>
+                                <div class="branding-item">
+                                    <label>Button-Text</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.spin_button_text">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="admin-card" style="margin-bottom: 32px;">
                     <div class="admin-card-header">
                         <h2>Gewinn-E-Mail</h2>

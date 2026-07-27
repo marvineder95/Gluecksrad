@@ -29,7 +29,18 @@ const CONFIG = {
         winner_email_enabled: '0',
         winner_email_subject: 'Herzlichen Glückwunsch zu deinem Gewinn!',
         winner_email_body: 'Hallo {{name}},\n\nherzlichen Glückwunsch! Du hast beim Glücksrad gewonnen: {{prize}}.\n\n{{win_text}}\n\nViel Freude damit!',
-        winner_email_sender: 'noreply@point4spin.at'
+        winner_email_sender: 'noreply@point4spin.at',
+        // === Design-Tokens (Rad-Stil, Labels, Texte) ===
+        segment_fill_mode: 'image',   // 'image' = Theme-Bilder | 'color' = Segmentfarbe
+        rim_style: 'gold',            // 'gold' = Premium-Verlauf | 'solid' = rim_color
+        rim_color: '#C8A866',
+        hub_color: '#C8A866',
+        separator_color: '#FFFFFF',
+        overlay_strength: 30,         // Abdunklung der Segment-Bilder in % (0-70)
+        label_enabled: '1',
+        label_color: '#FFFFFF',
+        label_scale: 1,               // Multiplikator der Label-Größe (0.7-1.4)
+        spin_button_text: 'Drehen'
     },
     ANIMATION: {
         confetti_particle_count: 200,
