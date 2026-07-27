@@ -15,6 +15,8 @@ const DashboardPage = {
         const segments = Vue.ref([]);
         const settings = Vue.ref({});
         const toasts = Vue.ref([]);
+        // Aktiver Tab im Dashboard: 'design' | 'gewinne' | 'statistik'
+        const activeTab = Vue.ref('design');
         const previewRotation = Vue.ref(0);
         const testSpinning = Vue.ref(false);
         const showSegmentModal = Vue.ref(false);
@@ -236,6 +238,23 @@ const DashboardPage = {
             return SEGMENT_THEMES[themeKey]?.name || themeKey || '';
         };
 
+        // Live-Branding-Vorschau: Hintergrund, Schrift & Akzent aus dem aktuell
+        // bearbeiteten (ungespeicherten) Formular – damit man sieht, was man ändert.
+        const previewBrandStyle = Vue.computed(() => {
+            let bg = '';
+            if (formSettings.value.theme === 'custom') {
+                bg = formSettings.value.background_image || '';
+            } else {
+                const t = THEMES.find(x => x.id === formSettings.value.theme);
+                bg = t ? t.image : '';
+            }
+            return {
+                backgroundImage: bg ? 'url("' + bg + '")' : 'none',
+                fontFamily: formSettings.value.font_family || 'Montserrat',
+                borderColor: formSettings.value.accent_color || 'transparent'
+            };
+        });
+
         // Segment modal
         const openSegmentModal = (segment) => {
             segmentImageFile.value = null;
@@ -383,21 +402,31 @@ const DashboardPage = {
             dragOverIndex.value = null;
             if (draggedIndex.value === null || draggedIndex.value === index) return;
             const fromIndex = draggedIndex.value;
+            draggedIndex.value = null;
+
+            // Neue Reihenfolge der Tabelle berechnen
             const segs = [...segmentStats.value];
             const [moved] = segs.splice(fromIndex, 1);
             segs.splice(index, 0, moved);
 
-            // Update sort_order for all
-            const orders = segs.map((seg, i) => ({ id: seg.id, sort_order: i }));
+            // Optimistisch anzeigen: Tabelle UND Live-Vorschau (Rad) sofort umsortieren,
+            // damit sichtbar ist, was sich ändert – nicht erst nach dem Server-Reload.
+            if (stats.value) stats.value.segment_stats = segs;
+            const orderById = new Map(segs.map((s, i) => [s.id, i]));
+            segments.value = [...segments.value].sort((a, b) =>
+                (orderById.has(a.id) ? orderById.get(a.id) : 999) -
+                (orderById.has(b.id) ? orderById.get(b.id) : 999)
+            );
 
+            const orders = segs.map((seg, i) => ({ id: seg.id, sort_order: i }));
             try {
                 await api.put(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments, { orders });
                 addToast('Reihenfolge aktualisiert');
                 loadAll();
             } catch (e) {
                 addToast('Fehler beim Sortieren', 'error');
+                loadAll();
             }
-            draggedIndex.value = null;
         };
 
         // Branding uploads
@@ -604,6 +633,8 @@ const DashboardPage = {
 
             getThemeImage,
             getThemeName,
+            previewBrandStyle,
+            activeTab,
             segmentImageFile,
             segmentImageOffsetX,
             segmentImageOffsetY,

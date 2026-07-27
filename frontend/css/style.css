@@ -1127,6 +1127,101 @@ html, body {
     height: 340px;
 }
 
+/* Tab-Navigation */
+.admin-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.admin-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 12px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-tab:hover {
+    color: #1E293B;
+}
+
+.admin-tab.active {
+    color: var(--gold, #C8A866);
+    border-bottom-color: var(--gold, #C8A866);
+}
+
+/* Workspace: sticky Vorschau links, umschaltbare Panels rechts */
+.admin-workspace {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.admin-preview-col {
+    position: sticky;
+    top: 88px;
+}
+
+.admin-panel-col {
+    min-width: 0;
+}
+
+@media (max-width: 1024px) {
+    .admin-workspace {
+        grid-template-columns: 1fr;
+    }
+    .admin-preview-col {
+        position: static;
+    }
+}
+
+/* Live-Branding-Vorschau: Bühne mit Hintergrund-Theme, Logo & Akzentrahmen */
+.preview-stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 24px 16px;
+    border-radius: 16px;
+    background-size: cover;
+    background-position: center;
+    border: 3px solid transparent;
+    transition: background-image 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+}
+
+.preview-stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+}
+
+.preview-stage > * {
+    position: relative;
+    z-index: 1;
+}
+
+.preview-logo {
+    max-height: 48px;
+    max-width: 60%;
+    margin-bottom: 12px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
 .preview-hint {
     display: flex;
     align-items: flex-start;
@@ -1423,6 +1518,20 @@ html, body {
 
 .segment-table tbody tr.drag-over td {
     background: #EEF2FF;
+}
+
+.drag-handle {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 6px;
+    color: #CBD5E1;
+    cursor: grab;
+    vertical-align: middle;
+    transition: color 0.15s ease;
+}
+
+.segment-table tbody tr:hover .drag-handle {
+    color: #6366F1;
 }
 
 .segment-table .num {
@@ -1913,8 +2022,9 @@ html, body {
 /* Theme Grid */
 .theme-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(96px, 110px));
     gap: 12px;
+    justify-content: start;
 }
 
 .theme-card {
@@ -1925,7 +2035,7 @@ html, body {
     border: 2px solid transparent;
     transition: all 0.2s ease;
     aspect-ratio: 9 / 16;
-    max-height: 160px;
+    width: 100%;
 }
 
 .theme-card:hover {
@@ -1974,7 +2084,7 @@ html, body {
 
 @media (max-width: 768px) {
     .theme-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(76px, 90px));
     }
 }
 

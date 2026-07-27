@@ -53,7 +53,7 @@ if ($method === 'GET') {
     if ($customerId === null || $customerId <= 0) {
         jsonResponse([]);
     }
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, icon, image, theme, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
     jsonResponse($stmt->fetchAll());
 }

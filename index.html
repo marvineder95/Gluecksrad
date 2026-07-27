@@ -1084,67 +1084,16 @@
             </header>
 
             <div class="admin-container">
-                <!-- KPI Cards -->
-                <div class="kpi-grid">
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <div class="kpi-icon blue">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                            </div>
-                            <span class="kpi-label">Gesamt<br>Drehungen</span>
-                        </div>
-                        <div class="kpi-value">{{ formatNumber(stats.total_spins_limit) }}</div>
-                        <div class="kpi-desc">Automatisch aus Kontingenten</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <div class="kpi-icon green">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            </div>
-                            <span class="kpi-label">Bereits<br>gedreht</span>
-                        </div>
-                        <div class="kpi-value">{{ formatNumber(stats.total_spins) }}</div>
-                        <div class="kpi-desc">Drehungen erfolgt</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <div class="kpi-icon gold">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-                            </div>
-                            <span class="kpi-label">Verbleibend</span>
-                        </div>
-                        <div class="kpi-value">{{ formatNumber(stats.remaining_spins) }}</div>
-                        <div class="kpi-desc">Drehungen offen</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-header">
-                            <div class="kpi-icon purple">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                            </div>
-                            <span class="kpi-label">Aktive<br>Segmente</span>
-                        </div>
-                        <div class="kpi-value">{{ stats.active_segments }}</div>
-                        <div class="kpi-desc">Segmente im Rad</div>
-                    </div>
-                    <!-- 5. KPI: Kampagne zurücksetzen -->
-                    <div class="kpi-card kpi-reset" @click="showResetModal = true" style="cursor: pointer;">
-                        <div class="kpi-header">
-                            <div class="kpi-icon red">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                            </div>
-                            <span class="kpi-label">Kampagne<br>zurücksetzen</span>
-                        </div>
-                        <div class="kpi-value" style="font-size: 1.2rem; margin-top: 4px;">
-                            <span class="kpi-reset-text">Alle Daten löschen</span>
-                        </div>
-                        <div class="kpi-desc">Segmente, Spins & Pool</div>
-                    </div>
-                </div>
+                <!-- Tab-Navigation -->
+                <nav class="admin-tabs">
+                    <button :class="['admin-tab', { active: activeTab === 'design' }]" @click="activeTab = 'design'">Design</button>
+                    <button :class="['admin-tab', { active: activeTab === 'gewinne' }]" @click="activeTab = 'gewinne'">Gewinne</button>
+                    <button :class="['admin-tab', { active: activeTab === 'statistik' }]" @click="activeTab = 'statistik'">Statistik</button>
+                </nav>
 
-                <!-- Main Content -->
-                <div class="admin-main-content">
-                    <!-- Left: Live Preview -->
-                    <div class="admin-left-col">
+                <div class="admin-workspace">
+                    <!-- Sticky Live-Vorschau: immer sichtbar -->
+                    <aside class="admin-preview-col">
                         <div class="admin-card">
                             <div class="admin-card-header">
                                 <h2>Live Vorschau</h2>
@@ -1152,7 +1101,10 @@
                             </div>
                             <div class="admin-card-body">
                                 <div class="preview-area">
-                                    <wheel-component :segments="segments" :rotation="previewRotation" :size="400"></wheel-component>
+                                    <div class="preview-stage" :style="previewBrandStyle">
+                                        <img v-if="formSettings.logo" :src="formSettings.logo" class="preview-logo" alt="Logo">
+                                        <wheel-component :segments="segments" :rotation="previewRotation" :size="400"></wheel-component>
+                                    </div>
                                 </div>
                                 <button class="btn-test" @click="testSpin" :disabled="testSpinning">
                                     <span v-if="testSpinning">Dreht...</span>
@@ -1165,224 +1117,11 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </aside>
 
-                    <!-- Right: Campaign + Segments -->
-                    <div class="admin-right-col">
-                        <!-- Segments Card -->
-                        <div class="admin-card">
-                            <div class="admin-card-header">
-                                <div class="section-header-row">
-                                    <div>
-                                        <h2>Segmente</h2>
-                                        <p>Gewinne und Verteilung in dieser Kampagne</p>
-                                    </div>
-                                    <button class="btn-add" @click="openSegmentModal()">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                        Segment hinzufügen
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="admin-card-body" style="padding: 0;">
-                                <div class="segment-table-wrap">
-                                    <table class="segment-table">
-                                        <thead>
-                                            <tr>
-                                                <th>#</th>
-                                                <th>Segment</th>
-                                                <th>Anzahl in Kampagne</th>
-                                                <th>Vergeben</th>
-                                                <th>Verbleibend</th>
-                                                <th>Theme</th>
-                                                <th>Aktionen</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(segment, idx) in segmentStats" :key="segment.id"
-                                                draggable="true"
-                                                :class="{ dragging: draggedIndex === idx, 'drag-over': dragOverIndex === idx && draggedIndex !== idx }"
-                                                @dragstart="onDragStart($event, idx)"
-                                                @dragover="onDragOver($event, idx)"
-                                                @dragleave="onDragLeave"
-                                                @dragend="onDragEnd"
-                                                @drop="onDrop($event, idx)"
-                                                style="cursor: grab;">
-                                                <td class="num">{{ idx + 1 }}</td>
-                                                <td class="seg-name">{{ segment.name }}</td>
-                                                <td>{{ segment.max_count }}</td>
-                                                <td>{{ segment.used_count }}</td>
-                                                <td>{{ segment.remaining }}</td>
-                                                <td>
-                                                    <div class="seg-theme-preview">
-                                                        <img :src="getThemeImage(segment.theme)" alt="">
-                                                        <span class="seg-theme">{{ getThemeName(segment.theme) }}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="actions">
-                                                    <button class="btn-icon" @click="openSegmentModal(segment)" title="Bearbeiten">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                                    </button>
-                                                    <button class="btn-icon danger" @click="deleteSegment(segment.id)" title="Löschen">
-                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <div class="segment-table-footer">
-                                        <span>Summe</span>
-                                        <span>{{ totalMaxCount }}</span>
-                                        <span>{{ totalUsedCount }}</span>
-                                        <span>{{ totalRemaining }}</span>
-                                        <span></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Drehverlauf -->
-                            <div class="admin-card" style="margin-bottom: 20px;">
-                                <div class="admin-card-header">
-                                    <h2>Drehverlauf</h2>
-                                    <p>Alle bisherigen Drehungen dieser Kampagne</p>
-                                </div>
-                                <div class="admin-card-body" style="padding: 0;">
-                                    <div class="spin-history-wrap">
-                                        <table class="spin-history-table" v-if="formattedSpins.length > 0">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Segment</th>
-                                                    <th>Datum</th>
-                                                    <th>Uhrzeit</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="(spin, idx) in formattedSpins" :key="idx">
-                                                    <td class="num">{{ idx + 1 }}</td>
-                                                    <td class="spin-name">{{ spin.segment_name }}</td>
-                                                    <td class="spin-date">{{ spin.date }}</td>
-                                                    <td class="spin-time">{{ spin.time }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div v-else class="spin-history-empty">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <p>Noch keine Drehungen vorhanden</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Lead-Statistiken -->
-                            <div class="admin-card" style="margin-bottom: 20px;" v-if="stats.lead_stats">
-                                <div class="admin-card-header">
-                                    <div class="section-header-row">
-                                        <div>
-                                            <h2>Lead-Statistiken</h2>
-                                            <p>Übersicht über erfasste Kontakte und Conversion</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="admin-card-body">
-                                    <div class="lead-stats-grid">
-                                        <div class="lead-stat-card">
-                                            <div class="lead-stat-icon">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                            </div>
-                                            <div class="lead-stat-value">{{ stats.lead_stats.lead_count }}</div>
-                                            <div class="lead-stat-label">Leads erfasst</div>
-                                        </div>
-                                        <div class="lead-stat-card">
-                                            <div class="lead-stat-icon">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            </div>
-                                            <div class="lead-stat-value">{{ stats.lead_stats.conversion_rate }}%</div>
-                                            <div class="lead-stat-label">Conversion-Rate</div>
-                                        </div>
-                                        <div class="lead-stat-card">
-                                            <div class="lead-stat-icon">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                                            </div>
-                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_with_lead }}</div>
-                                            <div class="lead-stat-label">Drehungen mit Lead</div>
-                                        </div>
-                                        <div class="lead-stat-card">
-                                            <div class="lead-stat-icon">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                                            </div>
-                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_without_lead }}</div>
-                                            <div class="lead-stat-label">Drehungen ohne Lead</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Leads -->
-                            <div class="admin-card" style="margin-bottom: 20px;">
-                                <div class="admin-card-header">
-                                    <div class="section-header-row">
-                                        <div>
-                                            <h2>Leads</h2>
-                                            <p>Erfasste Kontakte vor dem Drehen</p>
-                                        </div>
-                                        <div class="lead-header-actions">
-                                            <button class="btn-ghost btn-export" @click="exportLeadsCSV" v-if="formattedLeads.length > 0" title="Leads als CSV exportieren">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                <span>CSV Export</span>
-                                            </button>
-                                            <span class="lead-count-badge" v-if="formattedLeads.length > 0">{{ formattedLeads.length }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="admin-card-body" style="padding: 0;">
-                                    <div class="spin-history-wrap">
-                                        <table class="spin-history-table leads-table" v-if="formattedLeads.length > 0">
-                                            <thead>
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>Name</th>
-                                                    <th>E-Mail</th>
-                                                    <th>Gewinn</th>
-                                                    <th>Einwilligung</th>
-                                                    <th>Datum</th>
-                                                    <th>Uhrzeit</th>
-                                                    <th>Aktionen</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr v-for="(lead, idx) in formattedLeads" :key="lead.id">
-                                                    <td class="num">{{ idx + 1 }}</td>
-                                                    <td class="lead-name">{{ lead.name }}</td>
-                                                    <td class="lead-email">{{ lead.email }}</td>
-                                                    <td class="lead-prize">{{ lead.prize || '-' }}</td>
-                                                    <td class="lead-consent">
-                                                        <span class="consent-badge" :class="lead.consent_given ? 'given' : 'missing'">
-                                                            {{ lead.consent_given ? 'Ja' : 'Nein' }}
-                                                        </span>
-                                                    </td>
-                                                    <td class="lead-date">{{ lead.date }}</td>
-                                                    <td class="lead-time">{{ lead.time }}</td>
-                                                    <td class="lead-actions">
-                                                        <button class="icon-btn danger" @click="deleteLead(lead.id)" title="Löschen">
-                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <div v-else class="spin-history-empty">
-                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                            <p>Noch keine Leads erfasst</p>
-                                            <p class="lead-hint" v-if="!leadCaptureEnabled">Aktiviere die Lead-Erfassung im Header, um Daten zu sammeln.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Branding Section -->
+                    <main class="admin-panel-col">
+                        <!-- Tab: Design -->
+                        <div v-show="activeTab === 'design'">
                 <div class="admin-card" style="margin-bottom: 32px;">
                     <div class="admin-card-header">
                         <h2>Branding</h2>
@@ -1485,8 +1224,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Gewinn-E-Mail -->
                 <div class="admin-card" style="margin-bottom: 32px;">
                     <div class="admin-card-header">
                         <h2>Gewinn-E-Mail</h2>
@@ -1520,8 +1257,276 @@
                         </div>
                     </div>
                 </div>
+                        </div>
 
-                <!-- Footer hint -->
+                        <!-- Tab: Gewinne -->
+                        <div v-show="activeTab === 'gewinne'">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <div class="section-header-row">
+                                    <div>
+                                        <h2>Segmente</h2>
+                                        <p>Gewinne und Verteilung in dieser Kampagne</p>
+                                    </div>
+                                    <button class="btn-add" @click="openSegmentModal()">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Segment hinzufügen
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="admin-card-body" style="padding: 0;">
+                                <div class="segment-table-wrap">
+                                    <table class="segment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Segment</th>
+                                                <th>Anzahl in Kampagne</th>
+                                                <th>Vergeben</th>
+                                                <th>Verbleibend</th>
+                                                <th>Theme</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(segment, idx) in segmentStats" :key="segment.id"
+                                                draggable="true"
+                                                :class="{ dragging: draggedIndex === idx, 'drag-over': dragOverIndex === idx && draggedIndex !== idx }"
+                                                @dragstart="onDragStart($event, idx)"
+                                                @dragover="onDragOver($event, idx)"
+                                                @dragleave="onDragLeave"
+                                                @dragend="onDragEnd"
+                                                @drop="onDrop($event, idx)"
+                                                style="cursor: grab;">
+                                                <td class="num"><span class="drag-handle" title="Zum Sortieren ziehen"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="9" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="9" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="9" cy="13" r="1.4"/></svg></span>{{ idx + 1 }}</td>
+                                                <td class="seg-name">{{ segment.name }}</td>
+                                                <td>{{ segment.max_count }}</td>
+                                                <td>{{ segment.used_count }}</td>
+                                                <td>{{ segment.remaining }}</td>
+                                                <td>
+                                                    <div class="seg-theme-preview">
+                                                        <img :src="getThemeImage(segment.theme)" alt="">
+                                                        <span class="seg-theme">{{ getThemeName(segment.theme) }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="actions">
+                                                    <button class="btn-icon" @click="openSegmentModal(segment)" title="Bearbeiten">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                    </button>
+                                                    <button class="btn-icon danger" @click="deleteSegment(segment.id)" title="Löschen">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="segment-table-footer">
+                                        <span>Summe</span>
+                                        <span>{{ totalMaxCount }}</span>
+                                        <span>{{ totalUsedCount }}</span>
+                                        <span>{{ totalRemaining }}</span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
+                                        </div>
+                        </div>
+
+                        <!-- Tab: Statistik -->
+                        <div v-show="activeTab === 'statistik'">
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon blue">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </div>
+                            <span class="kpi-label">Gesamt<br>Drehungen</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.total_spins_limit) }}</div>
+                        <div class="kpi-desc">Automatisch aus Kontingenten</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon green">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <span class="kpi-label">Bereits<br>gedreht</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.total_spins) }}</div>
+                        <div class="kpi-desc">Drehungen erfolgt</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon gold">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                            </div>
+                            <span class="kpi-label">Verbleibend</span>
+                        </div>
+                        <div class="kpi-value">{{ formatNumber(stats.remaining_spins) }}</div>
+                        <div class="kpi-desc">Drehungen offen</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-header">
+                            <div class="kpi-icon purple">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                            </div>
+                            <span class="kpi-label">Aktive<br>Segmente</span>
+                        </div>
+                        <div class="kpi-value">{{ stats.active_segments }}</div>
+                        <div class="kpi-desc">Segmente im Rad</div>
+                    </div>
+                    <!-- 5. KPI: Kampagne zurücksetzen -->
+                    <div class="kpi-card kpi-reset" @click="showResetModal = true" style="cursor: pointer;">
+                        <div class="kpi-header">
+                            <div class="kpi-icon red">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </div>
+                            <span class="kpi-label">Kampagne<br>zurücksetzen</span>
+                        </div>
+                        <div class="kpi-value" style="font-size: 1.2rem; margin-top: 4px;">
+                            <span class="kpi-reset-text">Alle Daten löschen</span>
+                        </div>
+                        <div class="kpi-desc">Segmente, Spins & Pool</div>
+                    </div>
+                </div>
+                            <div class="admin-card" style="margin-bottom: 20px;">
+                                <div class="admin-card-header">
+                                    <h2>Drehverlauf</h2>
+                                    <p>Alle bisherigen Drehungen dieser Kampagne</p>
+                                </div>
+                                <div class="admin-card-body" style="padding: 0;">
+                                    <div class="spin-history-wrap">
+                                        <table class="spin-history-table" v-if="formattedSpins.length > 0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Segment</th>
+                                                    <th>Datum</th>
+                                                    <th>Uhrzeit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(spin, idx) in formattedSpins" :key="idx">
+                                                    <td class="num">{{ idx + 1 }}</td>
+                                                    <td class="spin-name">{{ spin.segment_name }}</td>
+                                                    <td class="spin-date">{{ spin.date }}</td>
+                                                    <td class="spin-time">{{ spin.time }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div v-else class="spin-history-empty">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            <p>Noch keine Drehungen vorhanden</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="admin-card" style="margin-bottom: 20px;" v-if="stats.lead_stats">
+                                <div class="admin-card-header">
+                                    <div class="section-header-row">
+                                        <div>
+                                            <h2>Lead-Statistiken</h2>
+                                            <p>Übersicht über erfasste Kontakte und Conversion</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="admin-card-body">
+                                    <div class="lead-stats-grid">
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.lead_count }}</div>
+                                            <div class="lead-stat-label">Leads erfasst</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.conversion_rate }}%</div>
+                                            <div class="lead-stat-label">Conversion-Rate</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_with_lead }}</div>
+                                            <div class="lead-stat-label">Drehungen mit Lead</div>
+                                        </div>
+                                        <div class="lead-stat-card">
+                                            <div class="lead-stat-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                            </div>
+                                            <div class="lead-stat-value">{{ stats.lead_stats.spins_without_lead }}</div>
+                                            <div class="lead-stat-label">Drehungen ohne Lead</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="admin-card" style="margin-bottom: 20px;">
+                                <div class="admin-card-header">
+                                    <div class="section-header-row">
+                                        <div>
+                                            <h2>Leads</h2>
+                                            <p>Erfasste Kontakte vor dem Drehen</p>
+                                        </div>
+                                        <div class="lead-header-actions">
+                                            <button class="btn-ghost btn-export" @click="exportLeadsCSV" v-if="formattedLeads.length > 0" title="Leads als CSV exportieren">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                <span>CSV Export</span>
+                                            </button>
+                                            <span class="lead-count-badge" v-if="formattedLeads.length > 0">{{ formattedLeads.length }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="admin-card-body" style="padding: 0;">
+                                    <div class="spin-history-wrap">
+                                        <table class="spin-history-table leads-table" v-if="formattedLeads.length > 0">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Name</th>
+                                                    <th>E-Mail</th>
+                                                    <th>Gewinn</th>
+                                                    <th>Einwilligung</th>
+                                                    <th>Datum</th>
+                                                    <th>Uhrzeit</th>
+                                                    <th>Aktionen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(lead, idx) in formattedLeads" :key="lead.id">
+                                                    <td class="num">{{ idx + 1 }}</td>
+                                                    <td class="lead-name">{{ lead.name }}</td>
+                                                    <td class="lead-email">{{ lead.email }}</td>
+                                                    <td class="lead-prize">{{ lead.prize || '-' }}</td>
+                                                    <td class="lead-consent">
+                                                        <span class="consent-badge" :class="lead.consent_given ? 'given' : 'missing'">
+                                                            {{ lead.consent_given ? 'Ja' : 'Nein' }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="lead-date">{{ lead.date }}</td>
+                                                    <td class="lead-time">{{ lead.time }}</td>
+                                                    <td class="lead-actions">
+                                                        <button class="icon-btn danger" @click="deleteLead(lead.id)" title="Löschen">
+                                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div v-else class="spin-history-empty">
+                                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                            <p>Noch keine Leads erfasst</p>
+                                            <p class="lead-hint" v-if="!leadCaptureEnabled">Aktiviere die Lead-Erfassung im Header, um Daten zu sammeln.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+
                 <div style="display: flex; align-items: center; gap: 8px; padding: 16px 0; color: #94A3B8; font-size: 0.8rem;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     Alle Änderungen werden automatisch gespeichert, wenn Sie auf "Speichern" klicken.

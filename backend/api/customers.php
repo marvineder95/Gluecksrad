@@ -111,7 +111,11 @@ if ($method === 'POST') {
             'id' => $customerId,
             'message' => 'Kunde angelegt',
             'email_sent' => $mailResult['success'],
-            'email_error' => $mailResult['success'] ? null : $mailResult['error']
+            'email_error' => $mailResult['success'] ? null : $mailResult['error'],
+            // Fallback: Konnte die E-Mail nicht versendet werden, wird das
+            // generierte Passwort zurückgegeben, damit der Super-Admin es
+            // manuell weitergeben kann.
+            'password' => $mailResult['success'] ? null : $plainPassword
         ]);
     } catch (PDOException $e) {
         $db->rollBack();
