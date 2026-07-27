@@ -1282,8 +1282,6 @@
                                                 <th>#</th>
                                                 <th>Segment</th>
                                                 <th>Anzahl in Kampagne</th>
-                                                <th>Vergeben</th>
-                                                <th>Verbleibend</th>
                                                 <th>Theme</th>
                                                 <th>Aktionen</th>
                                             </tr>
@@ -1301,8 +1299,6 @@
                                                 <td class="num"><span class="drag-handle" title="Zum Sortieren ziehen"><svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="9" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="9" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="9" cy="13" r="1.4"/></svg></span>{{ idx + 1 }}</td>
                                                 <td class="seg-name">{{ segment.name }}</td>
                                                 <td>{{ segment.max_count }}</td>
-                                                <td>{{ segment.used_count }}</td>
-                                                <td>{{ segment.remaining }}</td>
                                                 <td>
                                                     <div class="seg-theme-preview">
                                                         <img :src="getThemeImage(segment.theme)" alt="">
@@ -1323,8 +1319,7 @@
                                     <div class="segment-table-footer">
                                         <span>Summe</span>
                                         <span>{{ totalMaxCount }}</span>
-                                        <span>{{ totalUsedCount }}</span>
-                                        <span>{{ totalRemaining }}</span>
+                                        <span></span>
                                         <span></span>
                                     </div>
                                 </div>
@@ -1389,6 +1384,43 @@
                         <div class="kpi-desc">Segmente, Spins & Pool</div>
                     </div>
                 </div>
+                            <!-- Gewinn-Verteilung je Segment -->
+                            <div class="admin-card" style="margin-bottom: 20px;">
+                                <div class="admin-card-header">
+                                    <h2>Gewinn-Verteilung</h2>
+                                    <p>Vergebene und verbleibende Gewinne je Segment</p>
+                                </div>
+                                <div class="admin-card-body" style="padding: 0;">
+                                    <div class="segment-table-wrap">
+                                        <table class="segment-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Segment</th>
+                                                    <th>Anzahl in Kampagne</th>
+                                                    <th>Vergeben</th>
+                                                    <th>Verbleibend</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="segment in segmentStats" :key="segment.id">
+                                                    <td class="seg-name">{{ segment.name }}</td>
+                                                    <td>{{ segment.max_count }}</td>
+                                                    <td>{{ segment.used_count }}</td>
+                                                    <td>{{ segment.remaining }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        <div class="segment-table-footer">
+                                            <span>Summe</span>
+                                            <span>{{ totalMaxCount }}</span>
+                                            <span>{{ totalUsedCount }}</span>
+                                            <span>{{ totalRemaining }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Drehverlauf -->
                             <div class="admin-card" style="margin-bottom: 20px;">
                                 <div class="admin-card-header">
                                     <h2>Drehverlauf</h2>
