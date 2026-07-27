@@ -24,6 +24,14 @@ html, body {
     color: var(--text-dark);
 }
 
+/* Vertikale Scrollbar dauerhaft reservieren, damit der Wechsel zwischen
+   hohen (Design) und niedrigen (Gewinne) Tabs nicht horizontal springt.
+   scrollbar-gutter greift nur bei einem Scroll-Container (overflow != visible). */
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
 /* ===== EVENT MODE ===== */
 .event-page {
     height: 100vh;
