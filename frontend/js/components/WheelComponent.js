@@ -5,7 +5,8 @@ const WheelComponent = {
 
         // Aufgelöste Design-Tokens (Skin) mit Defaults
         const DEFAULT_SKIN = {
-            segment_fill_mode: 'image', rim_style: 'gold', rim_color: '#C8A866',
+            segment_fill_mode: 'image', rim_enabled: '1', rim_style: 'gold', rim_color: '#C8A866',
+            pointer_position: 'top',
             hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
             label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
             pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',

@@ -65,7 +65,7 @@
             </defs>
 
             <!-- === OUTER PREMIUM RIM === -->
-            <g :filter="sk.rim_glow === '1' ? 'url(#rimGlow)' : null">
+            <g v-if="sk.rim_enabled !== '0'" :filter="sk.rim_glow === '1' ? 'url(#rimGlow)' : null">
                 <circle v-if="accent" :cx="center" :cy="center" :r="radius + 18" fill="none" :stroke="accent" stroke-width="3" opacity="0.55"/>
                 <circle :cx="center" :cy="center" :r="radius + 14" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.rim_color" stroke-width="5" opacity="0.95"/>
                 <circle :cx="center" :cy="center" :r="radius + 10" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.rim_color" stroke-width="2" opacity="0.8"/>
@@ -174,25 +174,19 @@
                 <circle :cx="center" :cy="center" :r="hubR" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="1.5" opacity="0.5"/>
             </g>
 
-            <!-- === POINTER (bleibt oben, dreht mit Gegenrotation nicht mit) === -->
+            <!-- === POINTER oben/unten (dreht mit Gegenrotation nicht mit) === -->
             <g v-if="sk.pointer_enabled !== '0'" :transform="'rotate(' + (-(rotation || 0)) + ' ' + center + ' ' + center + ')'" style="pointer-events: none;">
-                <g style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
-                    <!-- triangle: breiter, scharfer Zeiger -->
-                    <polygon v-if="sk.pointer_style === 'triangle'"
-                             :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)"
-                             :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
-                    <!-- tab: runde Lasche (Bubbly) -->
-                    <rect v-else-if="sk.pointer_style === 'tab'"
-                          :x="center - 12" :y="center - radius - 22" width="24" height="40" rx="12"
-                          :fill="sk.pointer_color" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
-                    <!-- arrow: schlanker, langer Pfeil (Tech) -->
-                    <polygon v-else-if="sk.pointer_style === 'arrow'"
-                             :points="(center - 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 6) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 7) + ',' + (center - radius - 6)"
-                             :fill="sk.pointer_color"/>
-                    <!-- diamond: Raute (Glamour) -->
-                    <polygon v-else-if="sk.pointer_style === 'diamond'"
-                             :points="center + ',' + (center - radius - 22) + ' ' + (center + 13) + ',' + (center - radius - 4) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 13) + ',' + (center - radius - 4)"
-                             :fill="sk.pointer_color" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+                <g v-if="sk.pointer_position !== 'bottom'" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+                    <polygon v-if="sk.pointer_style === 'triangle'" :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)" :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+                    <rect v-else-if="sk.pointer_style === 'tab'" :x="center - 12" :y="center - radius - 22" width="24" height="40" rx="12" :fill="sk.pointer_color" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <polygon v-else-if="sk.pointer_style === 'arrow'" :points="(center - 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 6) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 7) + ',' + (center - radius - 6)" :fill="sk.pointer_color"/>
+                    <polygon v-else-if="sk.pointer_style === 'diamond'" :points="center + ',' + (center - radius - 22) + ' ' + (center + 13) + ',' + (center - radius - 4) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 13) + ',' + (center - radius - 4)" :fill="sk.pointer_color" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+                </g>
+                <g v-if="sk.pointer_position === 'bottom' || sk.pointer_position === 'both'" :transform="'rotate(180 ' + center + ' ' + center + ')'" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));">
+                    <polygon v-if="sk.pointer_style === 'triangle'" :points="(center - 14) + ',' + (center - radius - 16) + ' ' + (center + 14) + ',' + (center - radius - 16) + ' ' + center + ',' + (center - radius + 12)" :fill="sk.pointer_color" stroke="rgba(0,0,0,0.25)" stroke-width="1"/>
+                    <rect v-else-if="sk.pointer_style === 'tab'" :x="center - 12" :y="center - radius - 22" width="24" height="40" rx="12" :fill="sk.pointer_color" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                    <polygon v-else-if="sk.pointer_style === 'arrow'" :points="(center - 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 24) + ' ' + (center + 7) + ',' + (center - radius - 6) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 7) + ',' + (center - radius - 6)" :fill="sk.pointer_color"/>
+                    <polygon v-else-if="sk.pointer_style === 'diamond'" :points="center + ',' + (center - radius - 22) + ' ' + (center + 13) + ',' + (center - radius - 4) + ' ' + center + ',' + (center - radius + 14) + ' ' + (center - 13) + ',' + (center - radius - 4)" :fill="sk.pointer_color" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
                 </g>
             </g>
         </svg>
@@ -1284,13 +1278,20 @@
                                     </select>
                                 </div>
                                 <div class="branding-item">
+                                    <label>Außenrand</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.rim_enabled" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.rim_enabled === '1'">
                                     <label>Rand-Stil</label>
                                     <select class="admin-select" v-model="formSettings.rim_style">
                                         <option value="gold">Gold (Premium)</option>
                                         <option value="solid">Einfarbig</option>
                                     </select>
                                 </div>
-                                <div class="branding-item" v-if="formSettings.rim_style === 'solid'">
+                                <div class="branding-item" v-if="formSettings.rim_enabled === '1' && formSettings.rim_style === 'solid'">
                                     <label>Randfarbe</label>
                                     <color-picker v-model="formSettings.rim_color"></color-picker>
                                 </div>
@@ -1323,6 +1324,14 @@
                                         <input type="checkbox" v-model="formSettings.pointer_enabled" :true-value="'1'" :false-value="'0'">
                                         <span class="toggle-slider"></span>
                                     </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.pointer_enabled === '1'">
+                                    <label>Zeiger-Position</label>
+                                    <select class="admin-select" v-model="formSettings.pointer_position">
+                                        <option value="top">Oben</option>
+                                        <option value="bottom">Unten</option>
+                                        <option value="both">Oben &amp; Unten</option>
+                                    </select>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.pointer_enabled === '1'">
                                     <label>Zeiger-Form</label>

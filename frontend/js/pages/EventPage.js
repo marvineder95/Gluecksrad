@@ -211,7 +211,8 @@ const EventPage = {
         const skin = Vue.computed(() => {
             const s = settings.value || {};
             return {
-                segment_fill_mode: s.segment_fill_mode, rim_style: s.rim_style, rim_color: s.rim_color,
+                segment_fill_mode: s.segment_fill_mode, rim_enabled: s.rim_enabled, pointer_position: s.pointer_position,
+                rim_style: s.rim_style, rim_color: s.rim_color,
                 hub_color: s.hub_color, separator_color: s.separator_color, overlay_strength: s.overlay_strength,
                 label_enabled: s.label_enabled, label_color: s.label_color, label_scale: s.label_scale,
                 pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,

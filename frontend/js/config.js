@@ -32,8 +32,10 @@ const CONFIG = {
         winner_email_sender: 'noreply@point4spin.at',
         // === Design-Tokens (Rad-Stil, Labels, Texte) ===
         segment_fill_mode: 'image',   // 'image' = Theme-Bilder | 'color' = Segmentfarbe
+        rim_enabled: '1',             // Aussenrand an/aus
         rim_style: 'gold',            // 'gold' = Premium-Verlauf | 'solid' = rim_color
         rim_color: '#C8A866',
+        pointer_position: 'top',      // top | bottom | both
         hub_color: '#C8A866',
         separator_color: '#FFFFFF',
         overlay_strength: 30,         // Abdunklung der Segment-Bilder in % (0-70)

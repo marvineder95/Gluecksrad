@@ -91,6 +91,8 @@ const DashboardPage = {
                 winner_email_sender: sets.winner_email_sender || CONFIG.DEFAULTS.winner_email_sender,
                 // Design-Tokens
                 segment_fill_mode: sets.segment_fill_mode || CONFIG.DEFAULTS.segment_fill_mode,
+                rim_enabled: (sets.rim_enabled === '0' || sets.rim_enabled === 0) ? '0' : '1',
+                pointer_position: sets.pointer_position || CONFIG.DEFAULTS.pointer_position,
                 rim_style: sets.rim_style || CONFIG.DEFAULTS.rim_style,
                 rim_color: sets.rim_color || CONFIG.DEFAULTS.rim_color,
                 hub_color: sets.hub_color || CONFIG.DEFAULTS.hub_color,
@@ -294,6 +296,8 @@ const DashboardPage = {
         // Design-Tokens (Skin) für das Vorschaurad aus dem aktuellen Formular
         const previewSkin = Vue.computed(() => ({
             segment_fill_mode: formSettings.value.segment_fill_mode,
+            rim_enabled: formSettings.value.rim_enabled,
+            pointer_position: formSettings.value.pointer_position,
             rim_style: formSettings.value.rim_style,
             rim_color: formSettings.value.rim_color,
             hub_color: formSettings.value.hub_color,
@@ -542,6 +546,8 @@ const DashboardPage = {
                 formData.append('winner_email_sender', formSettings.value.winner_email_sender);
                 // Design-Tokens
                 formData.append('segment_fill_mode', formSettings.value.segment_fill_mode);
+                formData.append('rim_enabled', formSettings.value.rim_enabled === '0' ? '0' : '1');
+                formData.append('pointer_position', formSettings.value.pointer_position);
                 formData.append('rim_style', formSettings.value.rim_style);
                 formData.append('rim_color', formSettings.value.rim_color);
                 formData.append('hub_color', formSettings.value.hub_color);
