@@ -106,6 +106,7 @@ const DashboardPage = {
                 rim_glow: (sets.rim_glow === '1' || sets.rim_glow === 1) ? '1' : '0',
                 segment_gap: sets.segment_gap != null && sets.segment_gap !== '' ? sets.segment_gap : CONFIG.DEFAULTS.segment_gap,
                 hub_style: sets.hub_style || CONFIG.DEFAULTS.hub_style,
+                segment_palette: sets.segment_palette != null ? sets.segment_palette : CONFIG.DEFAULTS.segment_palette,
                 background_mode: sets.background_mode || CONFIG.DEFAULTS.background_mode,
                 background_color: sets.background_color || CONFIG.DEFAULTS.background_color
             };
@@ -311,9 +312,27 @@ const DashboardPage = {
                 hub_color: '#FFFFFF', separator_color: '#FFFFFF', overlay_strength: 0,
                 label_enabled: '1', label_color: '#FFFFFF', label_scale: 1.1,
                 pointer_enabled: '1', pointer_color: '#F472B6', pointer_style: 'tab',
-                rim_glow: '0', segment_gap: 4, hub_style: 'star',
+                rim_glow: '0', segment_gap: 4, hub_style: 'star', segment_palette: '',
                 background_mode: 'solid', background_color: '#FFF1F2',
-                font_family: 'Fredoka', primary_color: '#F472B6', secondary_color: '#FDE68A', accent_color: '#FB7185' } }
+                font_family: 'Fredoka', primary_color: '#F472B6', secondary_color: '#FDE68A', accent_color: '#FB7185' } },
+            { id: 'editorial', name: 'Editorial Mono', swatch: '#111111', values: {
+                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#111111',
+                hub_color: '#111111', separator_color: '#111111', overlay_strength: 0,
+                label_enabled: '1', label_color: 'auto', label_scale: 1,
+                pointer_enabled: '1', pointer_color: '#EF4444', pointer_style: 'triangle',
+                rim_glow: '0', segment_gap: 0, hub_style: 'dot',
+                segment_palette: '#111111,#FFFFFF',
+                background_mode: 'solid', background_color: '#FFFFFF',
+                font_family: 'Montserrat', primary_color: '#111111', secondary_color: '#EF4444', accent_color: '#EF4444' } },
+            { id: 'nature', name: 'Nature / Organic', swatch: '#7C8B5A', values: {
+                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#9C8466',
+                hub_color: '#6B4F3A', separator_color: '#F3EEE3', overlay_strength: 0,
+                label_enabled: '1', label_color: 'auto', label_scale: 1,
+                pointer_enabled: '1', pointer_color: '#6B4F3A', pointer_style: 'triangle',
+                rim_glow: '0', segment_gap: 2, hub_style: 'dot',
+                segment_palette: '#7C8B5A,#C97B5A,#D9C4A0,#A98467,#8A9A5B,#B98B5E',
+                background_mode: 'solid', background_color: '#F5F0E6',
+                font_family: 'Lora', primary_color: '#5A6B3A', secondary_color: '#C97B5A', accent_color: '#8A9A5B' } }
         ];
         const applyPreset = (preset) => {
             Object.assign(formSettings.value, preset.values);
@@ -336,7 +355,8 @@ const DashboardPage = {
             pointer_style: formSettings.value.pointer_style,
             rim_glow: formSettings.value.rim_glow,
             segment_gap: formSettings.value.segment_gap,
-            hub_style: formSettings.value.hub_style
+            hub_style: formSettings.value.hub_style,
+            segment_palette: formSettings.value.segment_palette
         }));
 
         // Segment modal
@@ -564,6 +584,7 @@ const DashboardPage = {
                 formData.append('rim_glow', formSettings.value.rim_glow === '1' ? '1' : '0');
                 formData.append('segment_gap', formSettings.value.segment_gap);
                 formData.append('hub_style', formSettings.value.hub_style);
+                formData.append('segment_palette', formSettings.value.segment_palette || '');
                 formData.append('background_mode', formSettings.value.background_mode);
                 formData.append('background_color', formSettings.value.background_color);
                 if (logoFile.value) formData.append('logo', logoFile.value);

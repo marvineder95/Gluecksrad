@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="frontend/css/style.css?v=112">
     <link rel="stylesheet" href="frontend/css/landing-new.css?v=112">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
@@ -87,7 +87,7 @@
 
                         <!-- === SEGMENT TITLES (curved along outer edge) === -->
                         <text v-if="sk.label_enabled !== '0'"
-                            :fill="sk.label_color"
+                            :fill="segment.labelColor"
                             :font-size="segment.fontSize * labelScale"
                             font-weight="700"
                             :font-family="(font || 'Montserrat') + ', sans-serif'"
@@ -1272,6 +1272,7 @@
                                     <option value="Playfair Display">Playfair Display (Serif)</option>
                                     <option value="Space Grotesk">Space Grotesk (Tech)</option>
                                     <option value="Fredoka">Fredoka (Rund)</option>
+                                    <option value="Lora">Lora (Serif)</option>
                                     <option value="Roboto">Roboto</option>
                                     <option value="Open Sans">Open Sans</option>
                                 </select>
@@ -1313,6 +1314,11 @@
                                         <option value="image">Theme-Bilder</option>
                                         <option value="color">Segmentfarbe</option>
                                     </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.segment_fill_mode === 'color'" style="grid-column: 1 / -1;">
+                                    <label>Segment-Palette (optional)</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.segment_palette" placeholder="#111111, #FFFFFF …">
+                                    <p class="form-hint">Kommagetrennte Hex-Farben überschreiben die Einzelfarben zyklisch. Leer = Farbe pro Segment.</p>
                                 </div>
                                 <div class="branding-item">
                                     <label>Rand-Stil</label>
@@ -1405,6 +1411,14 @@
                                     </label>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.label_enabled === '1'">
+                                    <label>Auto-Kontrast</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" :checked="formSettings.label_color === 'auto'"
+                                               @change="formSettings.label_color = $event.target.checked ? 'auto' : '#FFFFFF'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1' && formSettings.label_color !== 'auto'">
                                     <label>Textfarbe</label>
                                     <color-picker v-model="formSettings.label_color"></color-picker>
                                 </div>

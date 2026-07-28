@@ -48,6 +48,7 @@ const CONFIG = {
         rim_glow: '0',                // Neon-Glow am Rand (0/1)
         segment_gap: 0,               // Lücke zwischen Segmenten in Grad (0-8)
         hub_style: 'classic',         // classic | dot | ring | glow | star | gem
+        segment_palette: '',          // optional: kommagetrennte Hex überschreibt Segmentfarben
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
         background_color: '#0F172A'
     },

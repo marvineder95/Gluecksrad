@@ -9,7 +9,7 @@ const WheelComponent = {
             hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
             label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
             pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',
-            rim_glow: '0', segment_gap: 0, hub_style: 'classic'
+            rim_glow: '0', segment_gap: 0, hub_style: 'classic', segment_palette: ''
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
         const gapDeg = Vue.computed(() => {
@@ -24,6 +24,18 @@ const WheelComponent = {
             const s = parseFloat(sk.value.label_scale);
             return isNaN(s) ? 1 : Math.max(0.6, Math.min(1.6, s));
         });
+        // Optionale Segment-Palette (überschreibt Einzelfarben zyklisch)
+        const palette = Vue.computed(() =>
+            (sk.value.segment_palette || '').split(',').map(s => s.trim()).filter(Boolean)
+        );
+        const luminance = (hex) => {
+            const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+            if (!m) return 1;
+            const n = parseInt(m[1], 16);
+            const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+            return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        };
+        const contrastColor = (hex) => luminance(hex) > 0.55 ? '#1A1A1A' : '#FFFFFF';
         const svgSize = Vue.computed(() => props.size || 600);
         const centerValue = Vue.computed(() => svgSize.value / 2);
         const padding = CONFIG.WHEEL.svg_padding;
@@ -224,10 +236,18 @@ const WheelComponent = {
                 const themeKey = segment.theme || 'neutral';
                 const theme = SEGMENT_THEMES[themeKey] || SEGMENT_THEMES.neutral;
 
+                const pal = palette.value;
+                const fillColor = pal.length ? pal[index % pal.length] : (segment.color || CONFIG.DEFAULTS.segment_color);
+                let labelColor = sk.value.label_color;
+                if (labelColor === 'auto') {
+                    labelColor = sk.value.segment_fill_mode === 'color' ? contrastColor(fillColor) : '#FFFFFF';
+                }
+
                 return {
                     name: segment.name,
                     image: segment.image,
-                    color: segment.color || CONFIG.DEFAULTS.segment_color,
+                    color: fillColor,
+                    labelColor: labelColor,
                     theme,
                     path,
                     imageX: imageX + offsetX,
