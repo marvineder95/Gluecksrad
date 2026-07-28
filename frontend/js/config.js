@@ -20,6 +20,9 @@ const CONFIG = {
         secondary_color: '#F6A7C4',
         accent_color: '#D4AF37',
         font_family: 'Montserrat',
+        label_font: '',               // '' = erbt font_family
+        hub_font: '',
+        button_font: '',
         wheel_title: 'Glücksrad',
         segment_color: '#FF6B35',
         segment_weight: 100,

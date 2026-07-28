@@ -11,6 +11,9 @@ $DEFAULTS = [
     'secondary_color' => '#F6A7C4',
     'accent_color' => '#D4AF37',
     'font_family' => 'Montserrat',
+    'label_font' => '',
+    'hub_font' => '',
+    'button_font' => '',
     'wheel_title' => 'Glücksrad',
     'segment_color' => '#FF6B35',
     'segment_weight' => 100,
@@ -84,7 +87,8 @@ if ($method === 'POST') {
     $data = $_POST;
 
     // Text-Einstellungen
-    $textKeys = ['primary_color', 'secondary_color', 'font_family', 'wheel_title',
+    $textKeys = ['primary_color', 'secondary_color', 'font_family', 'label_font',
+                 'hub_font', 'button_font', 'wheel_title',
                  'campaign_status', 'campaign_started_at', 'accent_color', 'theme',
                  'lead_capture_enabled', 'winner_email_enabled', 'winner_email_subject',
                  'winner_email_sender',

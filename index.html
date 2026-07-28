@@ -92,7 +92,7 @@
                             :fill="segment.labelColor"
                             :font-size="segment.fontSize * labelScale"
                             font-weight="700"
-                            :font-family="(font || 'Montserrat') + ', sans-serif'"
+                            :font-family="(sk.label_font || font || 'Montserrat') + ', sans-serif'"
                             style="text-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);">
                             <textPath :href="'#' + textPaths[index].id"
                                 startOffset="50%"
@@ -164,11 +164,11 @@
                 <!-- TEXT im Mittelpunkt: gerade -->
                 <text v-else-if="sk.hub_type === 'text' && sk.hub_text_layout !== 'arch'" :x="center" :y="center" text-anchor="middle"
                       dominant-baseline="central" :fill="sk.hub_text_color"
-                      :font-size="hubR * 0.5" :font-family="(font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
+                      :font-size="hubR * 0.5" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
                 <!-- TEXT im Mittelpunkt: gebogen (arch) -->
                 <g v-else-if="sk.hub_type === 'text' && sk.hub_text_layout === 'arch'">
                     <path :id="'hubArc'" :d="hubArcPath" fill="none"/>
-                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34" :font-family="(font || 'Montserrat') + ', sans-serif'" font-weight="700">
+                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">
                         <textPath :href="'#hubArc'" startOffset="50%" text-anchor="middle">{{ sk.hub_text }}</textPath>
                     </text>
                 </g>
@@ -1423,6 +1423,20 @@
                                         <option value="arch">Gebogen (Bogen)</option>
                                     </select>
                                 </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'text'">
+                                    <label>Schriftart</label>
+                                    <select class="admin-select" v-model="formSettings.hub_font">
+                                        <option value="">Übergeordnet (Standard)</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Inter">Inter</option>
+                                        <option value="Playfair Display">Playfair Display</option>
+                                        <option value="Space Grotesk">Space Grotesk</option>
+                                        <option value="Fredoka">Fredoka</option>
+                                        <option value="Lora">Lora</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
+                                </div>
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type !== 'logo'">
                                     <label>Grundfarbe</label>
                                     <color-picker v-model="formSettings.hub_color"></color-picker>
@@ -1465,6 +1479,20 @@
                                     <label>Textgröße ({{ Math.round(formSettings.label_scale * 100) }}%)</label>
                                     <input type="range" class="design-range" min="0.7" max="1.4" step="0.05" v-model="formSettings.label_scale">
                                 </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1'">
+                                    <label>Schriftart</label>
+                                    <select class="admin-select" v-model="formSettings.label_font">
+                                        <option value="">Übergeordnet (Standard)</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Inter">Inter</option>
+                                        <option value="Playfair Display">Playfair Display</option>
+                                        <option value="Space Grotesk">Space Grotesk</option>
+                                        <option value="Fredoka">Fredoka</option>
+                                        <option value="Lora">Lora</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -1505,6 +1533,20 @@
                                 <div class="branding-item">
                                     <label>Größe ({{ Math.round(formSettings.button_size * 100) }}%)</label>
                                     <input type="range" class="design-range" min="0.8" max="1.4" step="0.05" v-model="formSettings.button_size">
+                                </div>
+                                <div class="branding-item">
+                                    <label>Schriftart</label>
+                                    <select class="admin-select" v-model="formSettings.button_font">
+                                        <option value="">Übergeordnet (Standard)</option>
+                                        <option value="Montserrat">Montserrat</option>
+                                        <option value="Inter">Inter</option>
+                                        <option value="Playfair Display">Playfair Display</option>
+                                        <option value="Space Grotesk">Space Grotesk</option>
+                                        <option value="Fredoka">Fredoka</option>
+                                        <option value="Lora">Lora</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
                                 </div>
                                 <div class="branding-item">
                                     <label>Button-Farbe</label>

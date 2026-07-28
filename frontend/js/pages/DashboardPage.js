@@ -95,6 +95,9 @@ const DashboardPage = {
                 secondary_color: sets.secondary_color || CONFIG.DEFAULTS.secondary_color,
                 accent_color: sets.accent_color || CONFIG.DEFAULTS.accent_color,
                 font_family: sets.font_family || CONFIG.DEFAULTS.font_family,
+                label_font: sets.label_font != null ? sets.label_font : CONFIG.DEFAULTS.label_font,
+                hub_font: sets.hub_font != null ? sets.hub_font : CONFIG.DEFAULTS.hub_font,
+                button_font: sets.button_font != null ? sets.button_font : CONFIG.DEFAULTS.button_font,
                 wheel_title: sets.wheel_title || CONFIG.DEFAULTS.wheel_title,
                 logo: sets.logo || '',
                 background_image: sets.background_image || '',
@@ -326,6 +329,8 @@ const DashboardPage = {
             label_enabled: formSettings.value.label_enabled,
             label_color: formSettings.value.label_color,
             label_scale: formSettings.value.label_scale,
+            label_font: formSettings.value.label_font,
+            hub_font: formSettings.value.hub_font,
             pointer_enabled: formSettings.value.pointer_enabled,
             pointer_color: formSettings.value.pointer_color,
             pointer_style: formSettings.value.pointer_style,
@@ -349,7 +354,7 @@ const DashboardPage = {
             return {
                 background: f.button_color || '#1E3A8A',
                 color: f.button_text_color || '#FFFFFF',
-                fontFamily: f.font_family || 'Montserrat',
+                fontFamily: (f.button_font || f.font_family || 'Montserrat'),
                 borderRadius: radius,
                 padding: (10 * scale) + 'px ' + (28 * scale) + 'px',
                 fontSize: (0.95 * scale) + 'rem',
@@ -559,6 +564,9 @@ const DashboardPage = {
                 formData.append('secondary_color', formSettings.value.secondary_color);
                 formData.append('accent_color', formSettings.value.accent_color);
                 formData.append('font_family', formSettings.value.font_family);
+                formData.append('label_font', formSettings.value.label_font || '');
+                formData.append('hub_font', formSettings.value.hub_font || '');
+                formData.append('button_font', formSettings.value.button_font || '');
                 formData.append('wheel_title', formSettings.value.wheel_title);
                 formData.append('theme', formSettings.value.theme);
                 formData.append('lead_capture_enabled', formSettings.value.lead_capture_enabled === '1' ? '1' : '0');

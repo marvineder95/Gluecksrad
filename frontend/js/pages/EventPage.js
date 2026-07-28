@@ -215,6 +215,7 @@ const EventPage = {
                 rim_style: s.rim_style, rim_color: s.rim_color,
                 hub_color: s.hub_color, separator_color: s.separator_color, overlay_strength: s.overlay_strength,
                 label_enabled: s.label_enabled, label_color: s.label_color, label_scale: s.label_scale,
+                label_font: s.label_font, hub_font: s.hub_font,
                 pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,
                 rim_glow: s.rim_glow, segment_gap: s.segment_gap, segment_palette: s.segment_palette,
                 hub_enabled: s.hub_enabled, hub_type: s.hub_type, hub_shape: s.hub_shape,
@@ -235,7 +236,7 @@ const EventPage = {
             const scale = parseFloat(s.button_size) || 1;
             const radius = s.button_shape === 'square' ? '8px' : s.button_shape === 'rounded' ? '18px' : '999px';
             const style = {
-                fontFamily: s.font_family || 'Montserrat',
+                fontFamily: (s.button_font || s.font_family || 'Montserrat'),
                 borderRadius: radius,
                 transform: 'scale(' + scale + ')'
             };
