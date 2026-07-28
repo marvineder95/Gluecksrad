@@ -15,6 +15,9 @@ $DEFAULTS = [
     'hub_font' => '',
     'button_font' => '',
     'wheel_title' => 'Glücksrad',
+    'win_badge_text' => 'GEWONNEN!',
+    'win_button_text' => 'NÄCHSTE RUNDE',
+    'win_default_text' => 'Herzlichen Glückwunsch!',
     'segment_color' => '#FF6B35',
     'segment_weight' => 100,
     'logo_fallback' => 'doveLogo.png',
@@ -88,7 +91,8 @@ if ($method === 'POST') {
 
     // Text-Einstellungen
     $textKeys = ['primary_color', 'secondary_color', 'font_family', 'label_font',
-                 'hub_font', 'button_font', 'wheel_title',
+                 'hub_font', 'button_font', 'wheel_title', 'win_badge_text',
+                 'win_button_text', 'win_default_text',
                  'campaign_status', 'campaign_started_at', 'accent_color', 'theme',
                  'lead_capture_enabled', 'winner_email_enabled', 'winner_email_subject',
                  'winner_email_sender',
@@ -101,7 +105,7 @@ if ($method === 'POST') {
                  'hub_text_color', 'hub_text_layout', 'hub_size', 'segment_palette', 'background_mode',
                  'background_color', 'button_shape', 'button_size', 'button_color',
                  'button_text_color', 'button_position'];
-    $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text'];
+    $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text', 'saved_preset'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {
             $stmt = $db->prepare("INSERT OR REPLACE INTO settings (customer_id, setting_key, setting_value) VALUES (?, ?, ?)");

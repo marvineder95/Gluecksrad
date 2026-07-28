@@ -340,11 +340,11 @@
             <Transition name="win-fade">
                 <div v-if="showWin" class="win-overlay" @click.self="nextRound">
                     <div class="win-content">
-                        <div class="win-badge">GEWONNEN!</div>
+                        <div class="win-badge">{{ settings.win_badge_text || 'GEWONNEN!' }}</div>
                         <img v-if="winner?.image" :src="winner.image" class="win-image" alt="">
                         <div class="win-name">{{ winner?.name }}</div>
-                        <div class="win-text">{{ winner?.win_text || 'Herzlichen Glückwunsch!' }}</div>
-                        <button class="next-round-btn" @click="nextRound">NÄCHSTE RUNDE</button>
+                        <div class="win-text">{{ winner?.win_text || settings.win_default_text || 'Herzlichen Glückwunsch!' }}</div>
+                        <button class="next-round-btn" @click="nextRound">{{ settings.win_button_text || 'NÄCHSTE RUNDE' }}</button>
                     </div>
                 </div>
             </Transition>
@@ -1506,6 +1506,18 @@
                                     <label>Rad-Titel</label>
                                     <input type="text" class="admin-input" v-model="formSettings.wheel_title">
                                 </div>
+                                <div class="branding-item">
+                                    <label>Gewinn-Überschrift</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.win_badge_text" placeholder="GEWONNEN!">
+                                </div>
+                                <div class="branding-item">
+                                    <label>Gewinn-Text (Standard)</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.win_default_text" placeholder="Herzlichen Glückwunsch!">
+                                </div>
+                                <div class="branding-item">
+                                    <label>„Nächste Runde"-Button</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.win_button_text" placeholder="NÄCHSTE RUNDE">
+                                </div>
                             </div>
                         </div>
 
@@ -1572,6 +1584,16 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Eigenes Preset -->
+                        <div class="design-section">
+                            <label class="design-section-label">Eigenes Preset</label>
+                            <p class="form-hint" style="margin-bottom: 12px;">Aktuelles Design als Preset sichern und jederzeit wiederherstellen.</p>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button type="button" class="btn-ghost" @click="savePreset">Als Preset speichern</button>
+                                <button type="button" class="btn-ghost" @click="restorePreset" :disabled="!hasSavedPreset">Preset wiederherstellen</button>
                             </div>
                         </div>
                     </div>

@@ -99,6 +99,9 @@ const DashboardPage = {
                 hub_font: sets.hub_font != null ? sets.hub_font : CONFIG.DEFAULTS.hub_font,
                 button_font: sets.button_font != null ? sets.button_font : CONFIG.DEFAULTS.button_font,
                 wheel_title: sets.wheel_title || CONFIG.DEFAULTS.wheel_title,
+                win_badge_text: sets.win_badge_text != null ? sets.win_badge_text : CONFIG.DEFAULTS.win_badge_text,
+                win_button_text: sets.win_button_text != null ? sets.win_button_text : CONFIG.DEFAULTS.win_button_text,
+                win_default_text: sets.win_default_text != null ? sets.win_default_text : CONFIG.DEFAULTS.win_default_text,
                 logo: sets.logo || '',
                 background_image: sets.background_image || '',
                 theme: sets.theme || CONFIG.DEFAULTS.theme,
@@ -575,6 +578,9 @@ const DashboardPage = {
                 formData.append('hub_font', formSettings.value.hub_font || '');
                 formData.append('button_font', formSettings.value.button_font || '');
                 formData.append('wheel_title', formSettings.value.wheel_title);
+                formData.append('win_badge_text', formSettings.value.win_badge_text || '');
+                formData.append('win_button_text', formSettings.value.win_button_text || '');
+                formData.append('win_default_text', formSettings.value.win_default_text || '');
                 formData.append('theme', formSettings.value.theme);
                 formData.append('lead_capture_enabled', formSettings.value.lead_capture_enabled === '1' ? '1' : '0');
                 formData.append('winner_email_enabled', formSettings.value.winner_email_enabled === '1' ? '1' : '0');
@@ -625,6 +631,32 @@ const DashboardPage = {
                 loadAll();
             } catch (e) {
                 addToast('Fehler beim Speichern', 'error');
+            }
+        };
+
+        // Eigenes Preset des Kunden speichern / wiederherstellen
+        const hasSavedPreset = Vue.computed(() => !!(settings.value && settings.value.saved_preset));
+        const savePreset = async () => {
+            try {
+                const snapshot = JSON.stringify(formSettings.value);
+                const fd = new FormData();
+                fd.append('saved_preset', snapshot);
+                await api.postForm(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings, fd);
+                settings.value = Object.assign({}, settings.value, { saved_preset: snapshot });
+                addToast('Preset gespeichert');
+            } catch (e) {
+                addToast('Fehler beim Speichern des Presets', 'error');
+            }
+        };
+        const restorePreset = () => {
+            const raw = settings.value ? settings.value.saved_preset : null;
+            if (!raw) { addToast('Kein Preset gespeichert', 'error'); return; }
+            try {
+                const snap = JSON.parse(raw);
+                Object.assign(formSettings.value, snap);
+                addToast('Preset geladen – zum Übernehmen „Speichern" klicken');
+            } catch (e) {
+                addToast('Preset konnte nicht geladen werden', 'error');
             }
         };
 
@@ -793,6 +825,9 @@ const DashboardPage = {
             previewButtonStyle,
             addBorder,
             removeBorder,
+            hasSavedPreset,
+            savePreset,
+            restorePreset,
             activeTab,
             segmentImageFile,
             segmentImageOffsetX,
