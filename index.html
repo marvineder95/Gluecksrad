@@ -1282,16 +1282,6 @@
                         <p>Preset als Basis wählen – alles darunter frei anpassbar</p>
                     </div>
                     <div class="admin-card-body">
-                        <!-- Presets -->
-                        <div class="design-section">
-                            <label class="design-section-label">Presets</label>
-                            <div class="preset-row">
-                                <button type="button" class="preset-btn" v-for="p in designPresets" :key="p.id" @click="applyPreset(p)">
-                                    <span class="preset-swatch" :style="{ background: p.swatch }"></span>{{ p.name }}
-                                </button>
-                            </div>
-                        </div>
-
                         <!-- Rad-Stil -->
                         <div class="design-section">
                             <label class="design-section-label">Rad-Stil</label>
@@ -1302,11 +1292,6 @@
                                         <option value="image">Theme-Bilder</option>
                                         <option value="color">Segmentfarbe</option>
                                     </select>
-                                </div>
-                                <div class="branding-item" v-if="formSettings.segment_fill_mode === 'color'" style="grid-column: 1 / -1;">
-                                    <label>Segment-Palette (optional)</label>
-                                    <input type="text" class="admin-input" v-model="formSettings.segment_palette" placeholder="#111111, #FFFFFF …">
-                                    <p class="form-hint">Kommagetrennte Hex-Farben überschreiben die Einzelfarben zyklisch. Leer = Farbe pro Segment.</p>
                                 </div>
                                 <div class="branding-item">
                                     <label>Rand-Stil</label>

@@ -281,63 +281,6 @@ const DashboardPage = {
             return style;
         });
 
-        // Rad-Designs als Presets (Basis, danach jeder Token frei überschreibbar)
-        const designPresets = [
-            { id: 'clean', name: 'Clean', swatch: '#E2E8F0', values: {
-                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#E2E8F0',
-                hub_color: '#CBD5E1', separator_color: '#FFFFFF', overlay_strength: 0,
-                label_enabled: '1', label_color: '#1E293B', label_scale: 0.95,
-                pointer_enabled: '1', pointer_color: '#64748B', pointer_style: 'triangle',
-                rim_glow: '0', segment_gap: 0, hub_style: 'ring',
-                background_mode: 'solid', background_color: '#F8FAFC',
-                font_family: 'Inter', primary_color: '#1E293B', secondary_color: '#CBD5E1', accent_color: '#94A3B8' } },
-            { id: 'tech', name: 'Tech', swatch: '#22D3EE', values: {
-                segment_fill_mode: 'image', rim_style: 'solid', rim_color: '#22D3EE',
-                hub_color: '#22D3EE', separator_color: '#334155', overlay_strength: 60,
-                label_enabled: '1', label_color: '#E0F7FF', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#EC4899', pointer_style: 'arrow',
-                rim_glow: '1', segment_gap: 0, hub_style: 'glow',
-                background_mode: 'solid', background_color: '#0B1120',
-                font_family: 'Space Grotesk', primary_color: '#22D3EE', secondary_color: '#EC4899', accent_color: '#22D3EE' } },
-            { id: 'glamour', name: 'Glamour', swatch: '#C8A866', values: {
-                segment_fill_mode: 'color', rim_style: 'gold', rim_color: '#C8A866',
-                hub_color: '#C8A866', separator_color: '#E8C87A', overlay_strength: 0,
-                label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#E8C87A', pointer_style: 'diamond',
-                rim_glow: '0', segment_gap: 0, hub_style: 'gem',
-                background_mode: 'solid', background_color: '#2A0E14',
-                font_family: 'Playfair Display', primary_color: '#E8C87A', secondary_color: '#7B2D3A', accent_color: '#E8C87A' } },
-            { id: 'bubbly', name: 'Round / Bubbly', swatch: '#F472B6', values: {
-                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#FBCFE8',
-                hub_color: '#FFFFFF', separator_color: '#FFFFFF', overlay_strength: 0,
-                label_enabled: '1', label_color: '#FFFFFF', label_scale: 1.1,
-                pointer_enabled: '1', pointer_color: '#F472B6', pointer_style: 'tab',
-                rim_glow: '0', segment_gap: 4, hub_style: 'star', segment_palette: '',
-                background_mode: 'solid', background_color: '#FFF1F2',
-                font_family: 'Fredoka', primary_color: '#F472B6', secondary_color: '#FDE68A', accent_color: '#FB7185' } },
-            { id: 'editorial', name: 'Editorial Mono', swatch: '#111111', values: {
-                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#111111',
-                hub_color: '#111111', separator_color: '#111111', overlay_strength: 0,
-                label_enabled: '1', label_color: 'auto', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#EF4444', pointer_style: 'triangle',
-                rim_glow: '0', segment_gap: 0, hub_style: 'dot',
-                segment_palette: '#111111,#FFFFFF',
-                background_mode: 'solid', background_color: '#FFFFFF',
-                font_family: 'Montserrat', primary_color: '#111111', secondary_color: '#EF4444', accent_color: '#EF4444' } },
-            { id: 'nature', name: 'Nature / Organic', swatch: '#7C8B5A', values: {
-                segment_fill_mode: 'color', rim_style: 'solid', rim_color: '#9C8466',
-                hub_color: '#6B4F3A', separator_color: '#F3EEE3', overlay_strength: 0,
-                label_enabled: '1', label_color: 'auto', label_scale: 1,
-                pointer_enabled: '1', pointer_color: '#6B4F3A', pointer_style: 'triangle',
-                rim_glow: '0', segment_gap: 2, hub_style: 'dot',
-                segment_palette: '#7C8B5A,#C97B5A,#D9C4A0,#A98467,#8A9A5B,#B98B5E',
-                background_mode: 'solid', background_color: '#F5F0E6',
-                font_family: 'Lora', primary_color: '#5A6B3A', secondary_color: '#C97B5A', accent_color: '#8A9A5B' } }
-        ];
-        const applyPreset = (preset) => {
-            Object.assign(formSettings.value, preset.values);
-            addToast('Design "' + preset.name + '" angewendet');
-        };
 
         // Design-Tokens (Skin) für das Vorschaurad aus dem aktuellen Formular
         const previewSkin = Vue.computed(() => ({
@@ -762,8 +705,6 @@ const DashboardPage = {
             getThemeName,
             previewBrandStyle,
             previewSkin,
-            designPresets,
-            applyPreset,
             activeTab,
             segmentImageFile,
             segmentImageOffsetX,
