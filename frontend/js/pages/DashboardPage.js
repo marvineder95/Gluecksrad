@@ -105,7 +105,12 @@ const DashboardPage = {
                 pointer_style: sets.pointer_style || CONFIG.DEFAULTS.pointer_style,
                 rim_glow: (sets.rim_glow === '1' || sets.rim_glow === 1) ? '1' : '0',
                 segment_gap: sets.segment_gap != null && sets.segment_gap !== '' ? sets.segment_gap : CONFIG.DEFAULTS.segment_gap,
-                hub_style: sets.hub_style || CONFIG.DEFAULTS.hub_style,
+                hub_enabled: (sets.hub_enabled === '0' || sets.hub_enabled === 0) ? '0' : '1',
+                hub_type: sets.hub_type || CONFIG.DEFAULTS.hub_type,
+                hub_shape: sets.hub_shape || CONFIG.DEFAULTS.hub_shape,
+                hub_text: sets.hub_text != null ? sets.hub_text : CONFIG.DEFAULTS.hub_text,
+                hub_text_color: sets.hub_text_color || CONFIG.DEFAULTS.hub_text_color,
+                hub_size: sets.hub_size != null && sets.hub_size !== '' ? sets.hub_size : CONFIG.DEFAULTS.hub_size,
                 segment_palette: sets.segment_palette != null ? sets.segment_palette : CONFIG.DEFAULTS.segment_palette,
                 background_mode: sets.background_mode || CONFIG.DEFAULTS.background_mode,
                 background_color: sets.background_color || CONFIG.DEFAULTS.background_color
@@ -298,7 +303,12 @@ const DashboardPage = {
             pointer_style: formSettings.value.pointer_style,
             rim_glow: formSettings.value.rim_glow,
             segment_gap: formSettings.value.segment_gap,
-            hub_style: formSettings.value.hub_style,
+            hub_enabled: formSettings.value.hub_enabled,
+            hub_type: formSettings.value.hub_type,
+            hub_shape: formSettings.value.hub_shape,
+            hub_text: formSettings.value.hub_text,
+            hub_text_color: formSettings.value.hub_text_color,
+            hub_size: formSettings.value.hub_size,
             segment_palette: formSettings.value.segment_palette
         }));
 
@@ -526,7 +536,12 @@ const DashboardPage = {
                 formData.append('pointer_style', formSettings.value.pointer_style);
                 formData.append('rim_glow', formSettings.value.rim_glow === '1' ? '1' : '0');
                 formData.append('segment_gap', formSettings.value.segment_gap);
-                formData.append('hub_style', formSettings.value.hub_style);
+                formData.append('hub_enabled', formSettings.value.hub_enabled === '0' ? '0' : '1');
+                formData.append('hub_type', formSettings.value.hub_type);
+                formData.append('hub_shape', formSettings.value.hub_shape);
+                formData.append('hub_text', formSettings.value.hub_text || '');
+                formData.append('hub_text_color', formSettings.value.hub_text_color);
+                formData.append('hub_size', formSettings.value.hub_size);
                 formData.append('segment_palette', formSettings.value.segment_palette || '');
                 formData.append('background_mode', formSettings.value.background_mode);
                 formData.append('background_color', formSettings.value.background_color);

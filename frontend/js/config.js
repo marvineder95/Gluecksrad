@@ -47,8 +47,14 @@ const CONFIG = {
         pointer_style: 'triangle',    // triangle | tab | arrow | diamond
         rim_glow: '0',                // Neon-Glow am Rand (0/1)
         segment_gap: 0,               // Lücke zwischen Segmenten in Grad (0-8)
-        hub_style: 'classic',         // classic | dot | ring | glow | star | gem
-        segment_palette: '',          // optional: kommagetrennte Hex überschreibt Segmentfarben
+        // Mittelelement (Hub) – frei konfigurierbar
+        hub_enabled: '1',
+        hub_type: 'shape',            // shape | text | logo
+        hub_shape: 'circle',          // circle | ring | diamond | star | glow
+        hub_text: '',
+        hub_text_color: '#FFFFFF',
+        hub_size: 0.16,               // Anteil des Radius (0.08-0.45)
+        segment_palette: '',          // intern (UI entfernt)
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
         background_color: '#0F172A'
     },

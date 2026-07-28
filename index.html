@@ -147,33 +147,31 @@
                       :stroke="sk.separator_color" stroke-width="1.5" opacity="0.5"/>
             </g>
 
-            <!-- === HUB (Mitte) – Form je nach hub_style === -->
-            <g v-if="sk.hub_style === 'classic'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.18" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3" opacity="0.9"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.hub_color" stroke-width="1.5" opacity="0.7"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.12" fill="url(#centerGlow)"/>
-            </g>
-            <g v-else-if="sk.hub_style === 'dot'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.12" :fill="sk.hub_color"/>
-                <circle :cx="center - radius*0.035" :cy="center - radius*0.035" :r="radius * 0.03" fill="rgba(255,255,255,0.55)"/>
-            </g>
-            <g v-else-if="sk.hub_style === 'ring'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.13" fill="#FFFFFF" :stroke="sk.hub_color" :stroke-width="radius*0.03"/>
-            </g>
-            <g v-else-if="sk.hub_style === 'glow'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.14" :fill="sk.hub_color" filter="url(#rimGlow)" opacity="0.9"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.07" fill="#0B1120"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.03" fill="#FFFFFF"/>
-            </g>
-            <g v-else-if="sk.hub_style === 'star'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.15" :fill="sk.hub_color"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="accent || sk.pointer_color" stroke-width="2" opacity="0.5"/>
-                <text :x="center" :y="center" text-anchor="middle" dominant-baseline="central" :font-size="radius * 0.17" :fill="accent || sk.pointer_color || '#F472B6'">★</text>
-            </g>
-            <g v-else-if="sk.hub_style === 'gem'" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="radius * 0.15" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="3"/>
-                <circle :cx="center" :cy="center" :r="radius * 0.13" fill="#1A0A0F"/>
-                <text :x="center" :y="center" text-anchor="middle" dominant-baseline="central" :font-size="radius * 0.15" :fill="sk.hub_color">◆</text>
+            <!-- === HUB / MITTELELEMENT (immer zentriert) === -->
+            <g v-if="sk.hub_enabled !== '0'" style="pointer-events: none;">
+                <!-- Grundkreis (Hintergrund für Text/Shape) -->
+                <circle v-if="sk.hub_type !== 'logo'" :cx="center" :cy="center" :r="hubR" :fill="sk.hub_color"
+                        :filter="sk.hub_type === 'shape' && sk.hub_shape === 'glow' ? 'url(#rimGlow)' : null"/>
+                <!-- SHAPE-Varianten -->
+                <g v-if="sk.hub_type === 'shape'">
+                    <circle v-if="sk.hub_shape === 'ring'" :cx="center" :cy="center" :r="hubR * 0.9" fill="#FFFFFF"/>
+                    <circle v-else-if="sk.hub_shape === 'glow'" :cx="center" :cy="center" :r="hubR * 0.45" fill="#FFFFFF"/>
+                    <polygon v-else-if="sk.hub_shape === 'diamond'" :points="hubDiamond" :fill="accent || sk.hub_text_color"/>
+                    <polygon v-else-if="sk.hub_shape === 'star'" :points="hubStar" :fill="accent || sk.hub_text_color"/>
+                </g>
+                <!-- TEXT im Mittelpunkt -->
+                <text v-else-if="sk.hub_type === 'text'" :x="center" :y="center" text-anchor="middle"
+                      dominant-baseline="central" :fill="sk.hub_text_color"
+                      :font-size="hubR * 0.5" :font-family="(font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
+                <!-- LOGO im Mittelpunkt -->
+                <g v-else-if="sk.hub_type === 'logo' && logo">
+                    <clipPath :id="'hubClip'"><circle :cx="center" :cy="center" :r="hubR"/></clipPath>
+                    <circle :cx="center" :cy="center" :r="hubR" fill="#FFFFFF"/>
+                    <image :href="logo" :x="center - hubR" :y="center - hubR" :width="hubR * 2" :height="hubR * 2"
+                           preserveAspectRatio="xMidYMid meet" :clip-path="'url(#hubClip)'"/>
+                </g>
+                <!-- dezenter Rand -->
+                <circle :cx="center" :cy="center" :r="hubR" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.hub_color" stroke-width="1.5" opacity="0.5"/>
             </g>
 
             <!-- === POINTER (bleibt oben, dreht mit Gegenrotation nicht mit) === -->
@@ -308,10 +306,7 @@
             <div class="wheel-area" ref="wheelAreaRef">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
                     <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"
-                        :skin="skin" :font="wheelFont" :accent="wheelAccent"></wheel-component>
-                    <div class="wheel-center">
-                        <img :src="logoUrl" alt="Logo" class="center-taube">
-                    </div>
+                        :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl"></wheel-component>
                 </div>
             </div>
 
@@ -1155,7 +1150,7 @@
                                             VIEL GLÜCK!
                                         </div>
                                         <wheel-component :segments="segments" :rotation="previewRotation" :size="400"
-                                            :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin"></wheel-component>
+                                            :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin" :logo="formSettings.logo"></wheel-component>
                                         <button class="preview-stage-btn"
                                             :style="{ background: formSettings.primary_color, fontFamily: formSettings.font_family, boxShadow: '0 6px 18px ' + formSettings.secondary_color + '66' }">
                                             {{ formSettings.spin_button_text || 'Drehen' }}
@@ -1348,17 +1343,6 @@
                                     <color-picker v-model="formSettings.pointer_color"></color-picker>
                                 </div>
                                 <div class="branding-item">
-                                    <label>Naben-Form (Mitte)</label>
-                                    <select class="admin-select" v-model="formSettings.hub_style">
-                                        <option value="classic">Klassisch (Gold)</option>
-                                        <option value="dot">Punkt</option>
-                                        <option value="ring">Ring</option>
-                                        <option value="glow">Leuchtend (Tech)</option>
-                                        <option value="star">Stern</option>
-                                        <option value="gem">Diamant</option>
-                                    </select>
-                                </div>
-                                <div class="branding-item">
                                     <label>Hintergrund</label>
                                     <select class="admin-select" v-model="formSettings.background_mode">
                                         <option value="theme">Theme-Bild</option>
@@ -1368,6 +1352,54 @@
                                 <div class="branding-item" v-if="formSettings.background_mode === 'solid'">
                                     <label>Hintergrundfarbe</label>
                                     <color-picker v-model="formSettings.background_color"></color-picker>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mittelelement -->
+                        <div class="design-section">
+                            <label class="design-section-label">Mittelelement</label>
+                            <div class="design-grid">
+                                <div class="branding-item">
+                                    <label>Mittelelement anzeigen</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.hub_enabled" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1'">
+                                    <label>Inhalt</label>
+                                    <select class="admin-select" v-model="formSettings.hub_type">
+                                        <option value="shape">Form</option>
+                                        <option value="text">Text</option>
+                                        <option value="logo">Logo</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'shape'">
+                                    <label>Form</label>
+                                    <select class="admin-select" v-model="formSettings.hub_shape">
+                                        <option value="circle">Kreis</option>
+                                        <option value="ring">Ring</option>
+                                        <option value="diamond">Raute</option>
+                                        <option value="star">Stern</option>
+                                        <option value="glow">Leuchtpunkt</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'text'" style="grid-column: 1 / -1;">
+                                    <label>Text in der Mitte</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.hub_text" placeholder="z.B. DREHEN">
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type !== 'logo'">
+                                    <label>Grundfarbe</label>
+                                    <color-picker v-model="formSettings.hub_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && (formSettings.hub_type === 'text' || formSettings.hub_type === 'shape')">
+                                    <label>Symbol-/Textfarbe</label>
+                                    <color-picker v-model="formSettings.hub_text_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1'">
+                                    <label>Größe ({{ Math.round(formSettings.hub_size * 100) }}%)</label>
+                                    <input type="range" class="design-range" min="0.08" max="0.45" step="0.01" v-model="formSettings.hub_size">
                                 </div>
                             </div>
                         </div>

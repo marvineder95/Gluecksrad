@@ -1,5 +1,5 @@
 const WheelComponent = {
-    props: ['segments', 'rotation', 'size', 'font', 'accent', 'skin'],
+    props: ['segments', 'rotation', 'size', 'font', 'accent', 'skin', 'logo'],
     setup(props) {
         const svgRef = Vue.ref(null);
 
@@ -9,7 +9,9 @@ const WheelComponent = {
             hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
             label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
             pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',
-            rim_glow: '0', segment_gap: 0, hub_style: 'classic', segment_palette: ''
+            rim_glow: '0', segment_gap: 0, segment_palette: '',
+            hub_enabled: '1', hub_type: 'shape', hub_shape: 'circle',
+            hub_text: '', hub_text_color: '#FFFFFF', hub_size: 0.16
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
         const gapDeg = Vue.computed(() => {
@@ -36,6 +38,26 @@ const WheelComponent = {
             return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
         };
         const contrastColor = (hex) => luminance(hex) > 0.55 ? '#1A1A1A' : '#FFFFFF';
+
+        // Hub-Geometrie (immer um den Mittelpunkt zentriert)
+        const hubR = Vue.computed(() => {
+            const s = parseFloat(sk.value.hub_size);
+            const frac = isNaN(s) ? 0.16 : Math.max(0.08, Math.min(0.45, s));
+            return radiusValue.value * frac;
+        });
+        const hubDiamond = Vue.computed(() => {
+            const c = centerValue.value, r = hubR.value;
+            return `${c},${c - r} ${c + r},${c} ${c},${c + r} ${c - r},${c}`;
+        });
+        const hubStar = Vue.computed(() => {
+            const c = centerValue.value, R = hubR.value, r = R * 0.42, pts = [];
+            for (let i = 0; i < 10; i++) {
+                const ang = (-90 + i * 36) * Math.PI / 180;
+                const rad = i % 2 === 0 ? R : r;
+                pts.push(`${(c + rad * Math.cos(ang)).toFixed(1)},${(c + rad * Math.sin(ang)).toFixed(1)}`);
+            }
+            return pts.join(' ');
+        });
         const svgSize = Vue.computed(() => props.size || 600);
         const centerValue = Vue.computed(() => svgSize.value / 2);
         const padding = CONFIG.WHEEL.svg_padding;
@@ -274,6 +296,9 @@ const WheelComponent = {
             overlayColor,
             labelScale,
             gapDeg,
+            hubR,
+            hubDiamond,
+            hubStar,
             config: CONFIG
         };
     },

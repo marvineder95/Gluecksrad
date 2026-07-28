@@ -215,7 +215,9 @@ const EventPage = {
                 hub_color: s.hub_color, separator_color: s.separator_color, overlay_strength: s.overlay_strength,
                 label_enabled: s.label_enabled, label_color: s.label_color, label_scale: s.label_scale,
                 pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,
-                rim_glow: s.rim_glow, segment_gap: s.segment_gap, hub_style: s.hub_style, segment_palette: s.segment_palette
+                rim_glow: s.rim_glow, segment_gap: s.segment_gap, segment_palette: s.segment_palette,
+                hub_enabled: s.hub_enabled, hub_type: s.hub_type, hub_shape: s.hub_shape,
+                hub_text: s.hub_text, hub_text_color: s.hub_text_color, hub_size: s.hub_size
             };
         });
         const wheelFont = Vue.computed(() => settings.value.font_family || 'Montserrat');

@@ -37,7 +37,12 @@ $DEFAULTS = [
     'pointer_style' => 'triangle',
     'rim_glow' => '0',
     'segment_gap' => '0',
-    'hub_style' => 'classic',
+    'hub_enabled' => '1',
+    'hub_type' => 'shape',
+    'hub_shape' => 'circle',
+    'hub_text' => '',
+    'hub_text_color' => '#FFFFFF',
+    'hub_size' => '0.16',
     'segment_palette' => '',
     'background_mode' => 'theme',
     'background_color' => '#0F172A'
@@ -78,7 +83,8 @@ if ($method === 'POST') {
                  'separator_color', 'overlay_strength', 'label_enabled',
                  'label_color', 'label_scale', 'spin_button_text',
                  'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
-                 'segment_gap', 'hub_style', 'segment_palette', 'background_mode',
+                 'segment_gap', 'hub_enabled', 'hub_type', 'hub_shape', 'hub_text',
+                 'hub_text_color', 'hub_size', 'segment_palette', 'background_mode',
                  'background_color'];
     $plainTextKeys = ['winner_email_body'];
     foreach ($textKeys as $key) {
