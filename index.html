@@ -324,7 +324,7 @@
                  @pointerleave="onWheelPointerUp"
                  @pointercancel="onWheelPointerUp">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
-                    <wheel-component :segments="displaySegments" :rotation="rotation" :size="wheelSize"
+                    <wheel-component :segments="wheelSegments" :rotation="rotation" :size="wheelSize"
                         :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl" :borders="wheelBorders"></wheel-component>
                 </div>
             </div>

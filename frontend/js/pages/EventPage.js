@@ -190,6 +190,10 @@ const EventPage = {
 
                 winner.value = result.winner;
 
+                // Aktuell angezeigte Segmente einfrieren – exakt die Liste,
+                // über die der Server winner_index/total_segments berechnet hat.
+                frozenSegments.value = displaySegments.value.slice();
+
                 runSpinAnimation({
                     rotationRef: rotation,
                     winnerIndex: result.winner_index,
@@ -226,6 +230,7 @@ const EventPage = {
             if (winTimer) { clearTimeout(winTimer); winTimer = null; }
             showWin.value = false;
             if (confetti) confetti.stop();
+            frozenSegments.value = null; // Rad wieder auf aktuellen Stand bringen
             spin(true);
         };
 
@@ -300,6 +305,7 @@ const EventPage = {
             }
             showWin.value = false;
             if (confetti) confetti.stop();
+            frozenSegments.value = null; // Rad wieder auf aktuellen Stand bringen
             // Lead-Formular für nächste Runde zurücksetzen, wenn aktiviert
             if (leadCaptureEnabled.value) {
                 currentLeadId.value = null;
@@ -346,6 +352,14 @@ const EventPage = {
                 .filter(s => !(isDepleted(s) && (s.depleted_behavior || 'hide') === 'hide'))
                 .map(s => isDepleted(s) ? Object.assign({}, s, { depleted: true }) : s);
         });
+
+        // Während einer Drehung + Gewinnanzeige die auf dem Rad gezeigten
+        // Segmente einfrieren. Sonst kann ein loadData() (nachlaufendes
+        // Erschöpfen eines Segments) das Rad neu zeichnen, während die
+        // Rotation schon feststeht -> Zeiger zeigt dann auf ein anderes
+        // Segment als der angezeigte Gewinn.
+        const frozenSegments = Vue.ref(null);
+        const wheelSegments = Vue.computed(() => frozenSegments.value || displaySegments.value);
 
         const wheelBorders = Vue.computed(() => {
             try {
@@ -399,7 +413,7 @@ const EventPage = {
         return {
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
             confettiCanvas, spin, nextRound, respinAgain, bgStyle, handleSecretClick, logoUrl,
-            skin, wheelFont, wheelAccent, buttonStyle, buttonText, spinHint, wheelBorders, displaySegments,
+            skin, wheelFont, wheelAccent, buttonStyle, buttonText, spinHint, wheelBorders, displaySegments, wheelSegments,
             wheelSize, wheelAreaRef, navigateTo,
             spinTrigger, onWheelClick, onWheelPointerDown, onWheelPointerMove, onWheelPointerUp,
             leadCaptureEnabled, showLeadForm, leadForm, leadError, leadData, activeLeadFields,
