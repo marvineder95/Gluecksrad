@@ -83,9 +83,10 @@ const WheelComponent = {
                     x2: (0.5 + 0.5 * Math.cos(ang)).toFixed(3),
                     y2: (0.5 + 0.5 * Math.sin(ang)).toFixed(3)
                 };
-                // Striped: Umfang in gleiche Segmente teilen
+                // Striped: Umfang in "stripes" gleich breite Bögen teilen
+                // (stripes = Anzahl Bögen; = Segmentzahl -> deckt sich mit Segmenten)
                 const stripes = Math.max(2, Math.min(60, Number(b.stripes) || 12));
-                const dash = (2 * Math.PI * r) / (stripes * 2);
+                const dash = (2 * Math.PI * r) / stripes;
                 const ring = {
                     id: i, r, width: w, glow: !!b.glow, fill: b.fill,
                     c1: b.c1 || '#C8A866', c2: b.c2 || b.c1 || '#C8A866',

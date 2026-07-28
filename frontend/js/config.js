@@ -32,6 +32,7 @@ const CONFIG = {
         logo_fallback: 'doveLogo.png',
         theme: 'dove',
         lead_capture_enabled: '0',
+        lead_fields: '[{"key":"vorname","label":"Vorname","type":"text","multiline":false,"required":true,"enabled":true},{"key":"nachname","label":"Nachname","type":"text","multiline":false,"required":false,"enabled":false},{"key":"email","label":"E-Mail","type":"text","multiline":false,"required":true,"enabled":true},{"key":"telefon","label":"Telefon","type":"text","multiline":false,"required":false,"enabled":false},{"key":"adresse","label":"Adresse","type":"text","multiline":true,"required":false,"enabled":false}]',
         winner_email_enabled: '0',
         winner_email_subject: 'Herzlichen Glückwunsch zu deinem Gewinn!',
         winner_email_body: 'Hallo {{name}},\n\nherzlichen Glückwunsch! Du hast beim Glücksrad gewonnen: {{prize}}.\n\n{{win_text}}\n\nViel Freude damit!',
@@ -52,6 +53,7 @@ const CONFIG = {
         label_shadow: '1',            // Schatten/Glow der Labels an/aus
         label_shadow_color: '#000000',
         spin_button_text: 'Drehen',
+        spin_trigger: 'button',       // button | hub | swipe
         // Erweiterte Rad-Stil-Tokens (für Design-Presets)
         pointer_enabled: '1',
         pointer_color: '#C8A866',

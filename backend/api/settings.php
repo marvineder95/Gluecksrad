@@ -41,6 +41,7 @@ $DEFAULTS = [
     'label_color' => '#FFFFFF',
     'label_scale' => '1',
     'spin_button_text' => 'Drehen',
+    'spin_trigger' => 'button',
     'pointer_enabled' => '1',
     'pointer_color' => '#C8A866',
     'pointer_style' => 'triangle',
@@ -101,13 +102,13 @@ if ($method === 'POST') {
                  'pointer_position', 'hub_color',
                  'separator_color', 'separator_width', 'overlay_strength', 'label_enabled',
                  'label_color', 'label_scale', 'label_shadow', 'label_shadow_color',
-                 'hub_content_scale', 'spin_button_text',
+                 'hub_content_scale', 'spin_button_text', 'spin_trigger',
                  'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
                  'segment_gap', 'hub_enabled', 'hub_type', 'hub_shape', 'hub_text',
                  'hub_text_color', 'hub_text_layout', 'hub_size', 'segment_palette', 'background_mode',
                  'background_color', 'button_shape', 'button_size', 'button_color',
                  'button_text_color', 'button_position'];
-    $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text', 'saved_preset'];
+    $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text', 'saved_preset', 'lead_fields'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {
             $stmt = $db->prepare("INSERT OR REPLACE INTO settings (customer_id, setting_key, setting_value) VALUES (?, ?, ?)");

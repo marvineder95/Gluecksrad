@@ -13,7 +13,7 @@ if ($customerId === null || $customerId <= 0) {
 if ($method === 'GET') {
     requireCustomerAdmin();
 
-    $stmt = $db->prepare("SELECT id, name, email, spin_id, prize, consent_given, created_at FROM leads WHERE customer_id = ? ORDER BY created_at DESC");
+    $stmt = $db->prepare("SELECT id, name, email, spin_id, prize, consent_given, data, created_at FROM leads WHERE customer_id = ? ORDER BY created_at DESC");
     $stmt->execute([$customerId]);
     $leads = $stmt->fetchAll();
 
@@ -26,6 +26,16 @@ if ($method === 'POST') {
     $name = sanitizePlainText($data['name'] ?? '');
     $email = filter_var(trim($data['email'] ?? ''), FILTER_VALIDATE_EMAIL);
     $consentGiven = !empty($data['consent_given']) ? 1 : 0;
+
+    // Zusätzliche konfigurierbare Lead-Felder als JSON
+    $extraData = null;
+    if (isset($data['data']) && is_array($data['data']) && count($data['data']) > 0) {
+        $clean = [];
+        foreach ($data['data'] as $k => $v) {
+            $clean[sanitizePlainText((string)$k)] = sanitizePlainText((string)$v);
+        }
+        $extraData = json_encode($clean, JSON_UNESCAPED_UNICODE);
+    }
 
     if (empty($name)) {
         jsonResponse(['error' => 'Name ist erforderlich'], 400);
@@ -41,8 +51,8 @@ if ($method === 'POST') {
     $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     checkRateLimit('lead:' . $clientIp, 10, 60);
 
-    $stmt = $db->prepare("INSERT INTO leads (customer_id, name, email, consent_given) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$customerId, $name, $email, $consentGiven]);
+    $stmt = $db->prepare("INSERT INTO leads (customer_id, name, email, consent_given, data) VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([$customerId, $name, $email, $consentGiven, $extraData]);
     $leadId = $db->lastInsertId();
 
     jsonResponse(['success' => true, 'id' => intval($leadId)]);

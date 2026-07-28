@@ -1,6 +1,6 @@
 // === Geteilte Spin-Animations-Logik ===
 
-function runSpinAnimation({ rotationRef, winnerIndex, totalSegments, onComplete, duration }) {
+function runSpinAnimation({ rotationRef, winnerIndex, totalSegments, onComplete, duration, extraRotations }) {
     const anglePerSegment = 360 / totalSegments;
     const targetAngle = (winnerIndex + 0.5) * anglePerSegment;
 
@@ -11,7 +11,9 @@ function runSpinAnimation({ rotationRef, winnerIndex, totalSegments, onComplete,
     let rotateAmount = targetAngle - currentEffective;
     if (rotateAmount <= 0) rotateAmount += 360;
 
-    const extraSpins = CONFIG.ANIMATION.spin_extra_rotations * 360;
+    // Anzahl der Zusatzumdrehungen (bei Swipe geschwindigkeitsabhängig übergeben)
+    const spins = (extraRotations != null ? extraRotations : CONFIG.ANIMATION.spin_extra_rotations);
+    const extraSpins = spins * 360;
     const finalRotation = rotationRef.value - rotateAmount - extraSpins;
 
     const actualDuration = duration || CONFIG.ANIMATION.spin_duration_ms;

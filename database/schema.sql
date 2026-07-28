@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS leads (
     spin_id INTEGER,
     prize TEXT,
     consent_given INTEGER DEFAULT 0,
+    data TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

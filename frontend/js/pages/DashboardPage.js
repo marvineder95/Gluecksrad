@@ -87,6 +87,21 @@ const DashboardPage = {
             formSettings.value.borders.splice(idx, 1);
         };
 
+        const parseLeadFields = (raw) => {
+            if (Array.isArray(raw)) return raw;
+            try { const a = JSON.parse(raw || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+        };
+        let customFieldCounter = 0;
+        const addLeadField = () => {
+            if (!Array.isArray(formSettings.value.leadFields)) formSettings.value.leadFields = [];
+            customFieldCounter++;
+            formSettings.value.leadFields.push({
+                key: 'custom_' + Date.now() + '_' + customFieldCounter,
+                label: 'Eigenes Feld', type: 'text', multiline: false, required: false, enabled: true, custom: true
+            });
+        };
+        const removeLeadField = (idx) => { formSettings.value.leadFields.splice(idx, 1); };
+
         const syncFormSettings = () => {
             const sets = settings.value;
             formSettings.value = {
@@ -127,6 +142,7 @@ const DashboardPage = {
                 label_shadow: (sets.label_shadow === '0' || sets.label_shadow === 0) ? '0' : '1',
                 label_shadow_color: sets.label_shadow_color || CONFIG.DEFAULTS.label_shadow_color,
                 spin_button_text: sets.spin_button_text || CONFIG.DEFAULTS.spin_button_text,
+                spin_trigger: sets.spin_trigger || CONFIG.DEFAULTS.spin_trigger,
                 pointer_enabled: (sets.pointer_enabled === '0' || sets.pointer_enabled === 0) ? '0' : '1',
                 pointer_color: sets.pointer_color || CONFIG.DEFAULTS.pointer_color,
                 pointer_style: sets.pointer_style || CONFIG.DEFAULTS.pointer_style,
@@ -149,7 +165,8 @@ const DashboardPage = {
                 button_text_color: sets.button_text_color || CONFIG.DEFAULTS.button_text_color,
                 button_position: sets.button_position || CONFIG.DEFAULTS.button_position,
                 hub_text_layout: sets.hub_text_layout || CONFIG.DEFAULTS.hub_text_layout,
-                borders: parseBorders(sets.wheel_borders != null ? sets.wheel_borders : CONFIG.DEFAULTS.wheel_borders)
+                borders: parseBorders(sets.wheel_borders != null ? sets.wheel_borders : CONFIG.DEFAULTS.wheel_borders),
+                leadFields: parseLeadFields(sets.lead_fields != null ? sets.lead_fields : CONFIG.DEFAULTS.lead_fields)
             };
             // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
@@ -243,10 +260,25 @@ const DashboardPage = {
         });
 
         const formattedLeads = Vue.computed(() => {
-            return leads.value.map(lead => ({
-                ...lead,
-                ...formatDateTime(lead.created_at)
-            }));
+            return leads.value.map(lead => {
+                let extra = {};
+                if (lead.data) {
+                    try { const p = JSON.parse(lead.data); if (p && typeof p === 'object') extra = p; } catch (e) {}
+                }
+                return {
+                    ...lead,
+                    ...formatDateTime(lead.created_at),
+                    extraFields: extra
+                };
+            });
+        });
+        // Alle vorkommenden Zusatzfeld-Spalten (Vereinigung über alle Leads)
+        const leadExtraColumns = Vue.computed(() => {
+            const keys = [];
+            formattedLeads.value.forEach(l => {
+                Object.keys(l.extraFields || {}).forEach(k => { if (!keys.includes(k)) keys.push(k); });
+            });
+            return keys;
         });
 
         // Test spin
@@ -600,6 +632,7 @@ const DashboardPage = {
                 formData.append('win_default_text', formSettings.value.win_default_text || '');
                 formData.append('theme', formSettings.value.theme);
                 formData.append('lead_capture_enabled', formSettings.value.lead_capture_enabled === '1' ? '1' : '0');
+                formData.append('lead_fields', JSON.stringify(formSettings.value.leadFields || []));
                 formData.append('winner_email_enabled', formSettings.value.winner_email_enabled === '1' ? '1' : '0');
                 formData.append('winner_email_subject', formSettings.value.winner_email_subject);
                 formData.append('winner_email_body', formSettings.value.winner_email_body);
@@ -620,6 +653,7 @@ const DashboardPage = {
                 formData.append('label_shadow', formSettings.value.label_shadow === '0' ? '0' : '1');
                 formData.append('label_shadow_color', formSettings.value.label_shadow_color);
                 formData.append('spin_button_text', formSettings.value.spin_button_text);
+                formData.append('spin_trigger', formSettings.value.spin_trigger || 'button');
                 formData.append('pointer_enabled', formSettings.value.pointer_enabled === '0' ? '0' : '1');
                 formData.append('pointer_color', formSettings.value.pointer_color);
                 formData.append('pointer_style', formSettings.value.pointer_style);
@@ -697,10 +731,12 @@ const DashboardPage = {
         };
 
         const exportLeadsCSV = () => {
-            const headers = ['Name', 'E-Mail', 'Gewinn', 'Einwilligung', 'Datum', 'Uhrzeit'];
+            const extraCols = leadExtraColumns.value;
+            const headers = ['Name', 'E-Mail', ...extraCols, 'Gewinn', 'Einwilligung', 'Datum', 'Uhrzeit'];
             const rows = formattedLeads.value.map(lead => [
                 lead.name || '',
                 lead.email || '',
+                ...extraCols.map(k => (lead.extraFields && lead.extraFields[k] != null) ? lead.extraFields[k] : ''),
                 lead.prize || '-',
                 lead.consent_given ? 'Ja' : 'Nein',
                 lead.date || '',
@@ -849,6 +885,8 @@ const DashboardPage = {
             previewButtonStyle,
             addBorder,
             removeBorder,
+            addLeadField,
+            removeLeadField,
             hasSavedPreset,
             savePreset,
             restorePreset,

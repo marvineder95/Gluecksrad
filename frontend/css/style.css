@@ -102,6 +102,21 @@ html {
     overflow: visible;
 }
 
+.wheel-area.wheel-tappable {
+    cursor: pointer;
+}
+
+.wheel-area.wheel-swipeable {
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.wheel-area.wheel-swipeable:active {
+    cursor: grabbing;
+}
+
 .wheel-wrapper {
     position: relative;
     width: 100%;
@@ -1255,6 +1270,17 @@ html {
     letter-spacing: 0.03em;
     cursor: default;
     pointer-events: none;
+}
+
+.preview-stage-hint {
+    margin-top: 14px;
+    padding: 8px 20px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.14);
+    color: #94A3B8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
 /* ===== Eigener Farbwähler (ColorPicker) ===== */

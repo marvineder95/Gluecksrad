@@ -72,8 +72,8 @@
             <!-- === AUSSENRÄNDER (mehrere Ringe: solid/gradient/striped/glow) === -->
             <g v-for="ring in borderRings" :key="'border'+ring.id" :filter="ring.glow ? 'url(#rimGlow)' : null" style="pointer-events: none;">
                 <circle v-if="ring.fill !== 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.stroke" :stroke-width="ring.width"/>
-                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c1" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash"/>
-                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c2" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash" :stroke-dashoffset="ring.dash"/>
+                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c1" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash" :transform="'rotate(-90 ' + center + ' ' + center + ')'"/>
+                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c2" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash" :stroke-dashoffset="ring.dash" :transform="'rotate(-90 ' + center + ' ' + center + ')'"/>
             </g>
 
             <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
@@ -282,20 +282,18 @@
                     <h3 class="lead-form-title">Gleich geht's los!</h3>
                     <p class="lead-form-subtitle">Trage dich ein, um am Gewinnspiel teilzunehmen.</p>
                     <div class="lead-form-fields">
-                        <input
-                            type="text"
-                            v-model="leadForm.name"
-                            placeholder="Dein Name"
-                            class="lead-form-input"
-                            @keyup.enter="submitLead()"
-                        >
-                        <input
-                            type="email"
-                            v-model="leadForm.email"
-                            placeholder="Deine E-Mail-Adresse"
-                            class="lead-form-input"
-                            @keyup.enter="submitLead()"
-                        >
+                        <template v-for="f in activeLeadFields" :key="f.key">
+                            <textarea v-if="f.multiline"
+                                v-model="leadData[f.key]"
+                                :placeholder="f.label + (f.required ? ' *' : '')"
+                                class="lead-form-input" rows="2" style="resize: vertical;"></textarea>
+                            <input v-else
+                                :type="f.type === 'number' ? 'number' : 'text'"
+                                v-model="leadData[f.key]"
+                                :placeholder="f.label + (f.required ? ' *' : '')"
+                                class="lead-form-input"
+                                @keyup.enter="submitLead()">
+                        </template>
                         <label class="lead-consent-label">
                             <input type="checkbox" v-model="consentGiven">
                             <span>Ich stimme der Verarbeitung meiner Daten sowie den Teilnahmebedingungen zu.</span>
@@ -310,7 +308,14 @@
                 </div>
             </div>
 
-            <div class="wheel-area" ref="wheelAreaRef">
+            <div class="wheel-area" ref="wheelAreaRef"
+                 :class="{ 'wheel-tappable': spinTrigger === 'hub', 'wheel-swipeable': spinTrigger === 'swipe' }"
+                 @click="onWheelClick"
+                 @pointerdown="onWheelPointerDown"
+                 @pointermove="onWheelPointerMove"
+                 @pointerup="onWheelPointerUp"
+                 @pointerleave="onWheelPointerUp"
+                 @pointercancel="onWheelPointerUp">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
                     <wheel-component :segments="displaySegments" :rotation="rotation" :size="wheelSize"
                         :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl" :borders="wheelBorders"></wheel-component>
@@ -330,10 +335,10 @@
             </div>
 
             <div class="spin-area" v-else>
-                <button class="spin-button" @click="spin()" :style="buttonStyle" :disabled="spinning || showWin || (leadCaptureEnabled && showLeadForm)">
+                <button v-if="spinTrigger === 'button'" class="spin-button" @click="spin()" :style="buttonStyle" :disabled="spinning || showWin || (leadCaptureEnabled && showLeadForm)">
                     {{ spinning ? 'Dreht...' : buttonText }}
                 </button>
-                <div class="spin-hint">Buzzer drücken zum drehen</div>
+                <div class="spin-hint">{{ spinning ? 'Dreht...' : spinHint }}</div>
             </div>
 
             <!-- Secret Admin Corner -->
@@ -1157,9 +1162,12 @@
                                         <img v-if="formSettings.logo" :src="formSettings.logo" class="preview-logo" alt="Logo">
                                         <wheel-component :segments="segments" :rotation="previewRotation" :size="400"
                                             :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin" :logo="formSettings.logo" :borders="formSettings.borders"></wheel-component>
-                                        <button class="preview-stage-btn" :style="previewButtonStyle">
+                                        <button v-if="formSettings.spin_trigger === 'button' || !formSettings.spin_trigger" class="preview-stage-btn" :style="previewButtonStyle">
                                             {{ formSettings.spin_button_text || 'Drehen' }}
                                         </button>
+                                        <div v-else class="preview-stage-hint">
+                                            {{ formSettings.spin_trigger === 'hub' ? '☝ Mitte antippen' : '↻ Rad anschwingen' }}
+                                        </div>
                                     </div>
                                 </div>
                                 <button class="btn-test" @click="testSpin" :disabled="testSpinning">
@@ -1537,11 +1545,24 @@
                         <div class="design-section">
                             <label class="design-section-label">Spin-Button</label>
                             <div class="design-grid">
-                                <div class="branding-item">
+                                <div class="branding-item" style="grid-column: 1 / -1;">
+                                    <label>Start-Auslöser</label>
+                                    <select class="admin-select" v-model="formSettings.spin_trigger">
+                                        <option value="button">Buzzer / Button</option>
+                                        <option value="hub">Mittelelement antippen</option>
+                                        <option value="swipe">Rad anschwingen (Wischen)</option>
+                                    </select>
+                                    <p class="input-hint" style="margin-top:4px;font-size:0.72rem;opacity:0.7;">
+                                        <span v-if="formSettings.spin_trigger === 'button'">Ein Buzzer/Button unter oder über dem Rad startet die Drehung.</span>
+                                        <span v-else-if="formSettings.spin_trigger === 'hub'">Ein Tippen auf das Rad (Mittelelement) startet die Drehung – ohne Button.</span>
+                                        <span v-else>Die Spielenden schwingen das Rad mit dem Finger an. Die Wischgeschwindigkeit steuert Dauer und Umdrehungen – der Gewinn bleibt fair vom System bestimmt.</span>
+                                    </p>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Button-Text</label>
                                     <input type="text" class="admin-input" v-model="formSettings.spin_button_text">
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Form</label>
                                     <select class="admin-select" v-model="formSettings.button_shape">
                                         <option value="pill">Pille (rund)</option>
@@ -1549,18 +1570,18 @@
                                         <option value="square">Eckig</option>
                                     </select>
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Position</label>
                                     <select class="admin-select" v-model="formSettings.button_position">
                                         <option value="below">Unter dem Rad</option>
                                         <option value="above">Über dem Rad</option>
                                     </select>
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Größe ({{ Math.round(formSettings.button_size * 100) }}%)</label>
                                     <input type="range" class="design-range" min="0.8" max="1.4" step="0.05" v-model="formSettings.button_size">
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Schriftart</label>
                                     <select class="admin-select" v-model="formSettings.button_font">
                                         <option value="">Übergeordnet (Standard)</option>
@@ -1574,11 +1595,11 @@
                                         <option value="Open Sans">Open Sans</option>
                                     </select>
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Button-Farbe</label>
                                     <color-picker v-model="formSettings.button_color"></color-picker>
                                 </div>
-                                <div class="branding-item">
+                                <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Textfarbe</label>
                                     <color-picker v-model="formSettings.button_text_color"></color-picker>
                                 </div>
@@ -1596,6 +1617,51 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
+                            </div>
+
+                            <div v-if="formSettings.lead_capture_enabled === '1'" style="margin-top: 16px;">
+                                <label class="design-section-label" style="font-size: 0.68rem;">Abgefragte Felder</label>
+                                <div class="border-row" v-for="(f, i) in formSettings.leadFields" :key="f.key">
+                                    <div class="border-row-head">
+                                        <label class="toggle-switch" style="transform: scale(0.85);">
+                                            <input type="checkbox" v-model="f.enabled">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <button v-if="f.custom" type="button" class="border-remove" @click="removeLeadField(i)">Entfernen</button>
+                                    </div>
+                                    <div class="design-grid" v-if="f.enabled">
+                                        <div class="branding-item">
+                                            <label>Bezeichnung</label>
+                                            <input type="text" class="admin-input" v-model="f.label">
+                                        </div>
+                                        <div class="branding-item">
+                                            <label>Typ</label>
+                                            <select class="admin-select" v-model="f.type">
+                                                <option value="text">Text</option>
+                                                <option value="number">Zahl</option>
+                                            </select>
+                                        </div>
+                                        <div class="branding-item">
+                                            <label>Mehrzeilig</label>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" v-model="f.multiline">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="branding-item">
+                                            <label>Pflichtfeld</label>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" v-model="f.required">
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div v-else style="font-size:0.85rem;color:#94A3B8;">{{ f.label }} (deaktiviert)</div>
+                                </div>
+                                <button type="button" class="btn-add" @click="addLeadField" style="margin-top: 8px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Eigenes Feld hinzufügen
+                                </button>
                             </div>
                         </div>
 
