@@ -7,6 +7,7 @@ $db = getDB();
 $DEFAULTS = [
     'total_spins_limit' => 1000,
     'campaign_status' => 'running',
+    'estimated_spins' => '100',
     'primary_color' => '#1E3A8A',
     'secondary_color' => '#F6A7C4',
     'accent_color' => '#D4AF37',
@@ -90,7 +91,7 @@ if ($method === 'POST') {
     $data = $_POST;
 
     // Text-Einstellungen
-    $textKeys = ['primary_color', 'secondary_color', 'font_family', 'label_font',
+    $textKeys = ['estimated_spins', 'primary_color', 'secondary_color', 'font_family', 'label_font',
                  'hub_font', 'button_font', 'wheel_title', 'win_badge_text',
                  'win_button_text', 'win_default_text',
                  'campaign_status', 'campaign_started_at', 'accent_color', 'theme',

@@ -95,8 +95,26 @@ if ($method === 'POST') {
         jsonResponse(['error' => 'Kampagne abgeschlossen. Alle Gewinne wurden vergeben.', 'code' => 'campaign_ended'], 400);
     }
 
-    // Gewichtete Auswahl: limitiert nach remaining, unlimited nach weight
-    $weightOf = function ($s) { return $s['is_unlimited'] ? max(1, intval($s['weight'])) : intval($s['remaining']); };
+    // Gewichtete Auswahl: limitiert nach remaining; unlimited teilen sich
+    // dynamisch die "Restdrehungen" (geschätzte Gesamtdrehungen minus die
+    // verbleibenden limitierten Lose) – kein manuelles Gewicht nötig.
+    $estStmt = $db->prepare("SELECT setting_value FROM settings WHERE customer_id = ? AND setting_key = 'estimated_spins'");
+    $estStmt->execute([$customerId]);
+    $estRow = $estStmt->fetch();
+    $estimatedSpins = $estRow ? max(1, intval($estRow['setting_value'])) : 100;
+
+    $limitedRemaining = 0;
+    $countUnlimited = 0;
+    foreach ($candidates as $c) {
+        if ($c['is_unlimited']) { $countUnlimited++; }
+        else { $limitedRemaining += intval($c['remaining']); }
+    }
+    $leftover = max($countUnlimited, $estimatedSpins - $limitedRemaining);
+    $unlimitedWeight = $countUnlimited > 0 ? max(1, (int)round($leftover / $countUnlimited)) : 0;
+
+    $weightOf = function ($s) use ($unlimitedWeight) {
+        return $s['is_unlimited'] ? $unlimitedWeight : intval($s['remaining']);
+    };
     $total = 0;
     foreach ($candidates as $c) { $total += $weightOf($c); }
     $rnd = mt_rand(1, max(1, $total));

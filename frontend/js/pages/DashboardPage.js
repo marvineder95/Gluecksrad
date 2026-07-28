@@ -91,6 +91,7 @@ const DashboardPage = {
             const sets = settings.value;
             formSettings.value = {
                 campaign_status: sets.campaign_status || CONFIG.DEFAULTS.campaign_status,
+                estimated_spins: sets.estimated_spins != null && sets.estimated_spins !== '' ? sets.estimated_spins : 100,
                 primary_color: sets.primary_color || CONFIG.DEFAULTS.primary_color,
                 secondary_color: sets.secondary_color || CONFIG.DEFAULTS.secondary_color,
                 accent_color: sets.accent_color || CONFIG.DEFAULTS.accent_color,
@@ -581,6 +582,7 @@ const DashboardPage = {
             try {
                 const formData = new FormData();
                 formData.append('campaign_status', formSettings.value.campaign_status);
+                formData.append('estimated_spins', formSettings.value.estimated_spins || 100);
                 formData.append('primary_color', formSettings.value.primary_color);
                 formData.append('secondary_color', formSettings.value.secondary_color);
                 formData.append('accent_color', formSettings.value.accent_color);

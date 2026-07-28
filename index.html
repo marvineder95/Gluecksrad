@@ -1690,6 +1690,13 @@
                                     </button>
                                 </div>
                             </div>
+                            <div class="admin-card-body" style="padding: 16px 16px 0;">
+                                <div class="branding-item" style="max-width: 340px; margin-bottom: 12px;">
+                                    <label>Geschätzte Drehungen (Kampagne)</label>
+                                    <input type="number" class="admin-input" v-model.number="formSettings.estimated_spins" min="1">
+                                    <p class="form-hint">Basis für unbegrenzte Preise: Drehungen über den vergebenen Losen verteilen sich auf die „Unbegrenzt"-Preise.</p>
+                                </div>
+                            </div>
                             <div class="admin-card-body" style="padding: 0;">
                                 <div class="segment-table-wrap">
                                     <table class="segment-table">
@@ -2049,9 +2056,8 @@
                                 <span v-if="segmentFormErrors.max_count" class="form-error">{{ segmentFormErrors.max_count }}</span>
                             </div>
                             <div class="admin-form-group" v-else>
-                                <label>Gewichtung (relative Häufigkeit)</label>
-                                <input type="number" class="admin-input" v-model.number="segmentForm.weight" min="1">
-                                <p class="form-hint">Höher = kommt öfter vor.</p>
+                                <label>Häufigkeit</label>
+                                <p class="form-hint" style="margin-top: 6px;">Unbegrenzte Preise teilen sich automatisch die „Restdrehungen" (geschätzte Gesamtdrehungen minus vergebene Lose). Die geschätzte Anzahl stellst du oben bei den Segmenten ein.</p>
                             </div>
                             <div class="admin-form-group">
                                 <label>Reihenfolge</label>
