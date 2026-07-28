@@ -59,7 +59,7 @@ if ($method === 'GET') {
     $activeSegments = intval($stmt->fetch()['count']);
 
     // Aktive Segmente laden
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, unlimited, depleted_behavior, is_respin, image_offset_x, image_offset_y, image_rotation, image_scale FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
     $segmentRows = $stmt->fetchAll();
 
@@ -79,6 +79,7 @@ if ($method === 'GET') {
     foreach ($segmentRows as $seg) {
         $usedCount = $poolCounts[$seg['id']] ?? 0;
         $maxCount = intval($seg['max_count']);
+        $isUnlimited = intval($seg['unlimited']) === 1;
         $segmentStats[] = [
             'id' => $seg['id'],
             'name' => $seg['name'],
@@ -89,12 +90,15 @@ if ($method === 'GET') {
             'theme' => $seg['theme'] ?? 'neutral',
             'sort_order' => intval($seg['sort_order']),
             'max_count' => $maxCount,
+            'unlimited' => intval($seg['unlimited']),
+            'depleted_behavior' => $seg['depleted_behavior'] ?? 'hide',
+            'is_respin' => intval($seg['is_respin']),
             'image_offset_x' => $seg['image_offset_x'] ?? 0,
             'image_offset_y' => $seg['image_offset_y'] ?? 0,
             'image_rotation' => $seg['image_rotation'] ?? 0,
             'image_scale' => $seg['image_scale'] ?? 1,
             'used_count' => $usedCount,
-            'remaining' => max(0, $maxCount - $usedCount)
+            'remaining' => $isUnlimited ? null : max(0, $maxCount - $usedCount)
         ];
     }
 
