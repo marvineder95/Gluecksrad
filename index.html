@@ -307,20 +307,8 @@
 
             <div class="wheel-area" ref="wheelAreaRef">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
-                    <div class="wheel-marker">
-                        <svg viewBox="0 0 50 60">
-                            <defs>
-                                <linearGradient id="markerGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#E8D5A3"/>
-                                    <stop offset="50%" stop-color="#C8A866"/>
-                                    <stop offset="100%" stop-color="#A68B4B"/>
-                                </linearGradient>
-                            </defs>
-                            <path d="M25 58 L6 18 Q6 2 25 2 Q44 2 44 18 Z" fill="url(#markerGrad2)" stroke="#A68B4B" stroke-width="1.5"/>
-                            <circle cx="25" cy="16" r="7" fill="#fff" stroke="#C8A866" stroke-width="1.5"/>
-                        </svg>
-                    </div>
-                    <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"></wheel-component>
+                    <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"
+                        :skin="skin" :font="wheelFont" :accent="wheelAccent"></wheel-component>
                     <div class="wheel-center">
                         <img :src="logoUrl" alt="Logo" class="center-taube">
                     </div>
@@ -340,8 +328,8 @@
             </div>
 
             <div class="spin-area" v-else>
-                <button class="spin-button" @click="spin()" :disabled="spinning || showWin || (leadCaptureEnabled && showLeadForm)">
-                    {{ spinning ? 'Dreht...' : 'DREHEN' }}
+                <button class="spin-button" @click="spin()" :style="buttonStyle" :disabled="spinning || showWin || (leadCaptureEnabled && showLeadForm)">
+                    {{ spinning ? 'Dreht...' : buttonText }}
                 </button>
                 <div class="spin-hint">Buzzer drücken zum drehen</div>
             </div>

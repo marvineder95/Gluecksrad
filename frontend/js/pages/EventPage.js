@@ -198,8 +198,35 @@ const EventPage = {
             }
         };
 
-        const bgStyle = Vue.computed(() => getBackgroundStyle(settings.value));
+        const bgStyle = Vue.computed(() => {
+            const s = settings.value || {};
+            if (s.background_mode === 'solid') {
+                return { backgroundColor: s.background_color || '#0F172A', backgroundImage: 'none', opacity: 1 };
+            }
+            return getBackgroundStyle(s);
+        });
         const logoUrl = Vue.computed(() => getLogoUrl(settings.value));
+
+        // Design-Tokens (Skin) für das echte Kiosk-Rad
+        const skin = Vue.computed(() => {
+            const s = settings.value || {};
+            return {
+                segment_fill_mode: s.segment_fill_mode, rim_style: s.rim_style, rim_color: s.rim_color,
+                hub_color: s.hub_color, separator_color: s.separator_color, overlay_strength: s.overlay_strength,
+                label_enabled: s.label_enabled, label_color: s.label_color, label_scale: s.label_scale,
+                pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,
+                rim_glow: s.rim_glow, segment_gap: s.segment_gap, hub_style: s.hub_style, segment_palette: s.segment_palette
+            };
+        });
+        const wheelFont = Vue.computed(() => settings.value.font_family || 'Montserrat');
+        const wheelAccent = Vue.computed(() => settings.value.accent_color || '');
+        const buttonStyle = Vue.computed(() => {
+            const s = settings.value || {};
+            const style = { fontFamily: s.font_family || 'Montserrat' };
+            if (s.primary_color) style.background = s.primary_color;
+            return style;
+        });
+        const buttonText = Vue.computed(() => settings.value.spin_button_text || 'DREHEN');
 
         Vue.onMounted(() => {
             checkAuth({ redirectOnFailure: true });
@@ -225,6 +252,7 @@ const EventPage = {
         return {
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
             confettiCanvas, spin, nextRound, bgStyle, handleSecretClick, logoUrl,
+            skin, wheelFont, wheelAccent, buttonStyle, buttonText,
             wheelSize, wheelAreaRef, navigateTo,
             leadCaptureEnabled, showLeadForm, leadForm, leadError,
             submitLead, skipLead, currentLeadId, leadSkipped, consentGiven
