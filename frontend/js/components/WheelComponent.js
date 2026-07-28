@@ -292,6 +292,7 @@ const WheelComponent = {
                     image: segment.image,
                     color: fillColor,
                     labelColor: labelColor,
+                    depleted: !!segment.depleted,
                     theme,
                     path,
                     imageX: imageX + offsetX,

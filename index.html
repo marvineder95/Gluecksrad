@@ -86,6 +86,8 @@
                         <path v-else :d="segment.path" :fill="segment.color" style="pointer-events: none;"/>
                         <!-- Overlay for text readability (nur bei Bild-Modus) -->
                         <path v-if="sk.segment_fill_mode !== 'color'" :d="segment.path" :fill="overlayColor" style="pointer-events: none;"/>
+                        <!-- Erschöpft (grau) -->
+                        <path v-if="segment.depleted" :d="segment.path" fill="rgba(110,110,115,0.72)" style="pointer-events: none;"/>
 
                         <!-- === SEGMENT TITLES (curved along outer edge) === -->
                         <text v-if="sk.label_enabled !== '0'"
@@ -308,7 +310,7 @@
 
             <div class="wheel-area" ref="wheelAreaRef">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
-                    <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"
+                    <wheel-component :segments="displaySegments" :rotation="rotation" :size="wheelSize"
                         :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl" :borders="wheelBorders"></wheel-component>
                 </div>
             </div>
@@ -1959,17 +1961,38 @@
                             <label>Gewinntext</label>
                             <textarea class="admin-input" v-model="segmentForm.win_text" rows="2" style="resize: vertical;"></textarea>
                         </div>
+                        <div class="admin-form-group">
+                            <div class="bg-removal-toggle" style="border:none; padding:0;">
+                                <input type="checkbox" id="unlimitedToggle" :checked="segmentForm.unlimited === '1'" @change="segmentForm.unlimited = $event.target.checked ? '1' : '0'">
+                                <label for="unlimitedToggle" class="bg-removal-label">
+                                    <span class="bg-removal-switch"></span>
+                                    <span class="bg-removal-text">Unbegrenzt (Preis läuft nie aus)</span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="modal-form-row">
-                            <div class="admin-form-group">
+                            <div class="admin-form-group" v-if="segmentForm.unlimited !== '1'">
                                 <label>Anzahl in Kampagne *</label>
-                                <input type="number" class="admin-input" :class="{ error: segmentFormErrors.max_count }" v-model.number="segmentForm.max_count" min="1" required>
+                                <input type="number" class="admin-input" :class="{ error: segmentFormErrors.max_count }" v-model.number="segmentForm.max_count" min="1">
                                 <span v-if="segmentFormErrors.max_count" class="form-error">{{ segmentFormErrors.max_count }}</span>
+                            </div>
+                            <div class="admin-form-group" v-else>
+                                <label>Gewichtung (relative Häufigkeit)</label>
+                                <input type="number" class="admin-input" v-model.number="segmentForm.weight" min="1">
+                                <p class="form-hint">Höher = kommt öfter vor.</p>
                             </div>
                             <div class="admin-form-group">
                                 <label>Reihenfolge</label>
                                 <input type="number" class="admin-input" :class="{ error: segmentFormErrors.sort_order }" v-model.number="segmentForm.sort_order" min="0">
                                 <span v-if="segmentFormErrors.sort_order" class="form-error">{{ segmentFormErrors.sort_order }}</span>
                             </div>
+                        </div>
+                        <div class="admin-form-group" v-if="segmentForm.unlimited !== '1'">
+                            <label>Wenn Kontingent aufgebraucht</label>
+                            <select class="admin-select" v-model="segmentForm.depleted_behavior">
+                                <option value="hide">Im Kiosk ausblenden</option>
+                                <option value="grey">Ausgegraut anzeigen</option>
+                            </select>
                         </div>
                         <div class="admin-form-group">
                             <label>Produktbild (optional)</label>

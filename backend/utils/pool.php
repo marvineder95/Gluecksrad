@@ -1,7 +1,7 @@
 <?php
 // Hilfsfunktion: Pool aus aktiven Segmenten generieren
 function generateSpinPool($db, $customerId) {
-    $stmt = $db->prepare("SELECT id, max_count FROM segments WHERE customer_id = ? AND is_active = 1 AND max_count > 0");
+    $stmt = $db->prepare("SELECT id, max_count FROM segments WHERE customer_id = ? AND is_active = 1 AND max_count > 0 AND (unlimited IS NULL OR unlimited = 0)");
     $stmt->execute([$customerId]);
     $segments = $stmt->fetchAll();
 

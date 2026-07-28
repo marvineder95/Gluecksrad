@@ -62,46 +62,61 @@ if ($method === 'POST') {
         jsonResponse(['error' => 'Kampagne ist pausiert.'], 400);
     }
 
-    // Zufälligen unbenutzten Pool-Eintrag holen
-    $stmt = $db->prepare("SELECT id, segment_id FROM spin_pool WHERE customer_id = ? AND is_used = 0 ORDER BY RANDOM() LIMIT 1");
+    // Alle aktiven Segmente + verbleibende Pool-Anzahl laden
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, unlimited, depleted_behavior FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
-    $poolEntry = $stmt->fetch();
+    $allSegments = $stmt->fetchAll();
 
-    if (!$poolEntry) {
+    $poolStmt = $db->prepare("SELECT segment_id, COUNT(*) AS c FROM spin_pool WHERE customer_id = ? AND is_used = 0 GROUP BY segment_id");
+    $poolStmt->execute([$customerId]);
+    $remainingBy = [];
+    foreach ($poolStmt->fetchAll() as $r) { $remainingBy[$r['segment_id']] = intval($r['c']); }
+
+    foreach ($allSegments as &$s) {
+        $s['is_unlimited'] = intval($s['unlimited']) === 1;
+        $s['remaining'] = $s['is_unlimited'] ? null : ($remainingBy[$s['id']] ?? 0);
+        $s['available'] = $s['is_unlimited'] || $s['remaining'] > 0;
+        $s['depleted'] = !$s['is_unlimited'] && ($s['remaining'] <= 0);
+    }
+    unset($s);
+
+    // Angezeigte Segmente = aktive minus (erschöpft UND depleted_behavior=hide)
+    $displaySegments = array_values(array_filter($allSegments, function ($s) {
+        return !($s['depleted'] && $s['depleted_behavior'] === 'hide');
+    }));
+
+    // Gewinnbare Kandidaten
+    $candidates = array_values(array_filter($allSegments, function ($s) { return $s['available']; }));
+
+    if (count($candidates) === 0 || count($displaySegments) === 0) {
         $db->rollBack();
-        // Auto-Ende der Kampagne
         $stmt = $db->prepare("INSERT OR REPLACE INTO settings (customer_id, setting_key, setting_value) VALUES (?, 'campaign_status', 'ended')");
         $stmt->execute([$customerId]);
         jsonResponse(['error' => 'Kampagne abgeschlossen. Alle Gewinne wurden vergeben.', 'code' => 'campaign_ended'], 400);
     }
 
-    // Segment-Details laden
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme FROM segments WHERE customer_id = ? AND id = ? AND is_active = 1");
-    $stmt->execute([$customerId, $poolEntry['segment_id']]);
-    $winner = $stmt->fetch();
+    // Gewichtete Auswahl: limitiert nach remaining, unlimited nach weight
+    $weightOf = function ($s) { return $s['is_unlimited'] ? max(1, intval($s['weight'])) : intval($s['remaining']); };
+    $total = 0;
+    foreach ($candidates as $c) { $total += $weightOf($c); }
+    $rnd = mt_rand(1, max(1, $total));
+    $acc = 0;
+    $winner = $candidates[0];
+    foreach ($candidates as $c) { $acc += $weightOf($c); if ($rnd <= $acc) { $winner = $c; break; } }
 
-    if (!$winner) {
-        $db->rollBack();
-        jsonResponse(['error' => 'Segment nicht mehr verfügbar'], 500);
+    // Bei limitiertem Gewinn: konkreten Pool-Eintrag zum Verbrauchen holen
+    $poolEntry = null;
+    if (!$winner['is_unlimited']) {
+        $pe = $db->prepare("SELECT id FROM spin_pool WHERE customer_id = ? AND segment_id = ? AND is_used = 0 ORDER BY RANDOM() LIMIT 1");
+        $pe->execute([$customerId, $winner['id']]);
+        $poolEntry = $pe->fetch();
     }
 
-    // Alle aktiven Segmente laden (für winner_index Berechnung)
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
-    $stmt->execute([$customerId]);
-    $segments = $stmt->fetchAll();
-
-    if (count($segments) === 0) {
-        $db->rollBack();
-        jsonResponse(['error' => 'Keine aktiven Segmente vorhanden'], 400);
-    }
-
-    // winner_index: Position im vollständigen Segment-Array (für Frontend-Animation)
+    // winner_index: Position innerhalb der ANGEZEIGTEN Segmente (Frontend-Rad)
+    $segments = $displaySegments;
     $winnerIndex = 0;
-    foreach ($segments as $idx => $seg) {
-        if ($seg['id'] == $winner['id']) {
-            $winnerIndex = $idx;
-            break;
-        }
+    foreach ($displaySegments as $idx => $seg) {
+        if ($seg['id'] == $winner['id']) { $winnerIndex = $idx; break; }
     }
 
     $leadId = null;
@@ -122,9 +137,11 @@ if ($method === 'POST') {
         $stmt->execute([$customerId, $winner['id'], $winner['name'], $winner['win_text'], $leadId]);
         $spinId = $db->lastInsertId();
 
-        // Pool-Eintrag als used markieren
-        $stmt = $db->prepare("UPDATE spin_pool SET is_used = 1, used_at = datetime('now'), spin_id = ? WHERE customer_id = ? AND id = ?");
-        $stmt->execute([$spinId, $customerId, $poolEntry['id']]);
+        // Pool-Eintrag als used markieren (nur bei limitiertem Gewinn)
+        if ($poolEntry) {
+            $stmt = $db->prepare("UPDATE spin_pool SET is_used = 1, used_at = datetime('now'), spin_id = ? WHERE customer_id = ? AND id = ?");
+            $stmt->execute([$spinId, $customerId, $poolEntry['id']]);
+        }
 
         // Lead mit Spin und Gewinn verknüpfen
         if ($leadId) {

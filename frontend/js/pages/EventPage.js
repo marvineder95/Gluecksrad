@@ -223,6 +223,15 @@ const EventPage = {
                 hub_text_layout: s.hub_text_layout
             };
         });
+        // Angezeigte Segmente: erschöpfte je nach depleted_behavior ausblenden/ausgrauen
+        const displaySegments = Vue.computed(() => {
+            const list = segments.value || [];
+            const isDepleted = (s) => !parseInt(s.unlimited || 0) && s.remaining !== null && s.remaining !== undefined && Number(s.remaining) <= 0;
+            return list
+                .filter(s => !(isDepleted(s) && (s.depleted_behavior || 'hide') === 'hide'))
+                .map(s => isDepleted(s) ? Object.assign({}, s, { depleted: true }) : s);
+        });
+
         const wheelBorders = Vue.computed(() => {
             try {
                 const arr = JSON.parse(settings.value.wheel_borders || '[]');
@@ -270,7 +279,7 @@ const EventPage = {
         return {
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
             confettiCanvas, spin, nextRound, bgStyle, handleSecretClick, logoUrl,
-            skin, wheelFont, wheelAccent, buttonStyle, buttonText, wheelBorders,
+            skin, wheelFont, wheelAccent, buttonStyle, buttonText, wheelBorders, displaySegments,
             wheelSize, wheelAreaRef, navigateTo,
             leadCaptureEnabled, showLeadForm, leadForm, leadError,
             submitLead, skipLead, currentLeadId, leadSkipped, consentGiven

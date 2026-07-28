@@ -53,9 +53,21 @@ if ($method === 'GET') {
     if ($customerId === null || $customerId <= 0) {
         jsonResponse([]);
     }
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, unlimited, depleted_behavior, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
-    jsonResponse($stmt->fetchAll());
+    $rows = $stmt->fetchAll();
+
+    // Verbleibende Pool-Einträge je Segment (für unlimited/depleted-Logik im Kiosk)
+    $poolStmt = $db->prepare("SELECT segment_id, COUNT(*) AS remaining FROM spin_pool WHERE customer_id = ? AND is_used = 0 GROUP BY segment_id");
+    $poolStmt->execute([$customerId]);
+    $remainingBy = [];
+    foreach ($poolStmt->fetchAll() as $r) { $remainingBy[$r['segment_id']] = intval($r['remaining']); }
+
+    foreach ($rows as &$seg) {
+        $seg['remaining'] = intval($seg['unlimited']) ? null : ($remainingBy[$seg['id']] ?? 0);
+    }
+    unset($seg);
+    jsonResponse($rows);
 }
 
 // POST /api/segments - Neues Segment erstellen oder Update (wenn id vorhanden)
@@ -74,6 +86,8 @@ if ($method === 'POST') {
     $theme = sanitizeText($data['theme'] ?? 'neutral');
     $color = sanitizeText($data['color'] ?? '#FF6B35');
     if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) { $color = '#FF6B35'; }
+    $unlimited = (!empty($data['unlimited']) && $data['unlimited'] !== '0' && $data['unlimited'] !== 'false') ? 1 : 0;
+    $depletedBehavior = ($data['depleted_behavior'] ?? 'hide') === 'grey' ? 'grey' : 'hide';
     $imageOffsetX = floatval($data['image_offset_x'] ?? 0);
     $imageOffsetY = floatval($data['image_offset_y'] ?? 0);
     $imageRotation = floatval($data['image_rotation'] ?? 0);
@@ -88,9 +102,10 @@ if ($method === 'POST') {
         jsonResponse(['error' => 'Name ist erforderlich'], 400);
     }
 
-    if ($max_count < 1) {
-        jsonResponse(['error' => 'Anzahl in Kampagne muss mindestens 1 sein. Unbegrenzte Segmente sind nicht mehr erlaubt.'], 400);
+    if (!$unlimited && $max_count < 1) {
+        jsonResponse(['error' => 'Anzahl in Kampagne muss mindestens 1 sein (oder als „unbegrenzt" markieren).'], 400);
     }
+    if ($unlimited) { $max_count = 0; }
 
     // Optional: Prüfen, ob bestehendes Segment dem Kunden gehört
     if ($id) {
@@ -163,11 +178,11 @@ if ($method === 'POST') {
             $oldMaxCount = $oldSegment ? intval($oldSegment['max_count']) : 0;
 
             if ($imagePath !== null) {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             } else {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             }
 
             // Pool anpassen, falls sich max_count geändert hat
@@ -175,8 +190,8 @@ if ($method === 'POST') {
                 adjustPoolForSegment($db, $customerId, $id, $max_count);
             }
         } else {
-            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, color, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $color, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
+            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, color, unlimited, depleted_behavior, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $color, $unlimited, $depletedBehavior, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
             $id = $db->lastInsertId();
 
             // Neue Pool-Einträge für das neue Segment

@@ -376,6 +376,8 @@ const DashboardPage = {
                     max_count: segment.max_count || 0,
                     theme: segment.theme || 'neutral',
                     color: segment.color || CONFIG.DEFAULTS.segment_color,
+                    unlimited: (parseInt(segment.unlimited) === 1) ? '1' : '0',
+                    depleted_behavior: segment.depleted_behavior === 'grey' ? 'grey' : 'hide',
                     image: segment.image || '',
                     removeBg: false
                 };
@@ -389,6 +391,7 @@ const DashboardPage = {
                     name: '', win_text: '', weight: 100,
                     sort_order: segments.value.length, max_count: 1,
                     theme: 'neutral', color: CONFIG.DEFAULTS.segment_color,
+                    unlimited: '0', depleted_behavior: 'hide',
                     image: '', removeBg: autoRemoveBg.value
                 };
                 segmentImageOffsetX.value = 0;
@@ -419,10 +422,12 @@ const DashboardPage = {
             } else if (parseInt(form.sort_order) < 0) {
                 errors.sort_order = 'Sortierung darf nicht negativ sein';
             }
-            if (form.max_count === '' || form.max_count === null || form.max_count === undefined) {
-                errors.max_count = 'Anzahl in Kampagne ist erforderlich';
-            } else if (parseInt(form.max_count) < 1) {
-                errors.max_count = 'Anzahl in Kampagne muss mindestens 1 sein';
+            if (form.unlimited !== '1') {
+                if (form.max_count === '' || form.max_count === null || form.max_count === undefined) {
+                    errors.max_count = 'Anzahl in Kampagne ist erforderlich';
+                } else if (parseInt(form.max_count) < 1) {
+                    errors.max_count = 'Anzahl in Kampagne muss mindestens 1 sein';
+                }
             }
             segmentFormErrors.value = errors;
             return Object.keys(errors).length === 0;
@@ -442,6 +447,8 @@ const DashboardPage = {
                 formData.append('max_count', segmentForm.value.max_count);
                 formData.append('theme', segmentForm.value.theme || 'neutral');
                 formData.append('color', segmentForm.value.color || CONFIG.DEFAULTS.segment_color);
+                formData.append('unlimited', segmentForm.value.unlimited === '1' ? '1' : '0');
+                formData.append('depleted_behavior', segmentForm.value.depleted_behavior || 'hide');
                 formData.append('remove_bg', segmentForm.value.removeBg ? '1' : '0');
                 formData.append('image_offset_x', String(segmentImageOffsetX.value || 0));
                 formData.append('image_offset_y', String(segmentImageOffsetY.value || 0));
