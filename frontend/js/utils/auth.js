@@ -66,7 +66,8 @@ function navigateTo(hash) {
 }
 
 function getLogoUrl(settings) {
-    return settings?.logo || CONFIG.DEFAULTS.logo_fallback;
+    // Kein Fallback-Bild (existiert nicht) -> leer, damit kein Broken-Image
+    return settings?.logo || '';
 }
 
 function getBackgroundStyle(settings) {

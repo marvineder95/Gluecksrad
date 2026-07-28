@@ -1,12 +1,22 @@
-# Upload-Verzeichnis: Kein direkter Zugriff, keine PHP-Ausführung
-<IfModule mod_authz_core.c>
-    Require all denied
-</IfModule>
-<IfModule !mod_authz_core.c>
-    Order allow,deny
-    Deny from all
-</IfModule>
+# Upload-Verzeichnis: Bilder ausliefern, aber kein Directory-Listing
+# und keine Skript-Ausführung (Sicherheit).
+Options -Indexes
 
+# PHP-Engine hier deaktivieren
 <IfModule mod_php.c>
     php_flag engine off
 </IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+
+# Skript-/Code-Dateien blockieren (Bilder bleiben abrufbar)
+<FilesMatch "\.(php|phtml|phar|pht|cgi|pl|py|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

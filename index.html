@@ -267,7 +267,7 @@
             <div class="feather-decor feather-decor-3"></div>
 
             <div class="event-header">
-                <div class="logo-wrapper">
+                <div class="logo-wrapper" v-if="logoUrl">
                     <img :src="logoUrl" class="logo-taube-img" alt="Logo">
                 </div>
                 <div class="gold-line"></div>
@@ -1104,7 +1104,7 @@
             <header class="admin-header-bar">
                 <div class="admin-header-inner">
                     <div class="admin-header-left">
-                        <img :src="formSettings.logo || 'doveLogo.png'" class="admin-header-logo" alt="Logo">
+                        <img v-if="formSettings.logo" :src="formSettings.logo" class="admin-header-logo" alt="Logo">
                         <div class="admin-header-title">
                             <h1>{{ formSettings.wheel_title || 'Glücksrad' }}</h1>
                             <span>Dashboard</span>
@@ -1155,10 +1155,6 @@
                                 <div class="preview-area">
                                     <div class="preview-stage" :style="previewBrandStyle">
                                         <img v-if="formSettings.logo" :src="formSettings.logo" class="preview-logo" alt="Logo">
-                                        <div class="preview-stage-title"
-                                             :style="{ color: formSettings.primary_color, fontFamily: formSettings.font_family, textShadow: '0 0 18px ' + formSettings.secondary_color }">
-                                            VIEL GLÜCK!
-                                        </div>
                                         <wheel-component :segments="segments" :rotation="previewRotation" :size="400"
                                             :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin" :logo="formSettings.logo" :borders="formSettings.borders"></wheel-component>
                                         <button class="preview-stage-btn" :style="previewButtonStyle">
@@ -1237,23 +1233,6 @@
                                 <button v-if="formSettings.background_image" class="upload-btn" @click="$refs.bgInput.click()">Bild ändern</button>
                             </div>
 
-                            <!-- Titel-Farbe (Vorschau-Headline "VIEL GLÜCK!") -->
-                            <div class="branding-item">
-                                <label>Titel-Farbe</label>
-                                <color-picker v-model="formSettings.primary_color"></color-picker>
-                            </div>
-
-                            <!-- Titel-Glow -->
-                            <div class="branding-item">
-                                <label>Titel-Glow / Schatten</label>
-                                <color-picker v-model="formSettings.secondary_color"></color-picker>
-                            </div>
-
-                            <!-- Akzent-Ring ums Rad -->
-                            <div class="branding-item">
-                                <label>Akzent-Ring (ums Rad)</label>
-                                <color-picker v-model="formSettings.accent_color"></color-picker>
-                            </div>
 
                             <!-- Font -->
                             <div class="branding-item">

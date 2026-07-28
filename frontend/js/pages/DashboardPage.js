@@ -371,7 +371,7 @@ const DashboardPage = {
                 borderRadius: radius,
                 padding: (10 * scale) + 'px ' + (28 * scale) + 'px',
                 fontSize: (0.95 * scale) + 'rem',
-                boxShadow: '0 6px 18px ' + (f.secondary_color || '#000000') + '66',
+                boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
                 order: f.button_position === 'above' ? -1 : 5
             };
         });

@@ -109,7 +109,15 @@ const WheelComponent = {
         const svgSize = Vue.computed(() => props.size || 600);
         const centerValue = Vue.computed(() => svgSize.value / 2);
         const padding = CONFIG.WHEEL.svg_padding;
-        const radiusValue = Vue.computed(() => centerValue.value - padding);
+        // Gesamtdicke aller Aussenränder – das Rad wird entsprechend kleiner,
+        // damit die Ränder im Sichtfeld bleiben und nichts überlappen.
+        const borderExtent = Vue.computed(() => {
+            const list = Array.isArray(props.borders) ? props.borders : [];
+            let e = 0;
+            list.forEach(b => { e += (b.gap != null ? Math.max(0, Number(b.gap)) : 2) + Math.max(1, Number(b.width) || 4); });
+            return e;
+        });
+        const radiusValue = Vue.computed(() => Math.max(40, centerValue.value - padding - borderExtent.value));
         const viewBoxValue = Vue.computed(() => '0 0 ' + svgSize.value + ' ' + svgSize.value);
         const wheelStyle = Vue.computed(() => ({ transform: 'rotate(' + (props.rotation || 0) + 'deg)' }));
 
