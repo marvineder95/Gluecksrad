@@ -200,6 +200,7 @@ const EventPage = {
                     totalSegments: result.total_segments,
                     duration: animOverride ? animOverride.duration : undefined,
                     extraRotations: animOverride ? animOverride.extraRotations : undefined,
+                    direction: animOverride ? animOverride.direction : undefined,
                     onComplete: () => {
                         spinning.value = false;
                         setTimeout(() => {
@@ -285,7 +286,8 @@ const EventPage = {
 
         const onWheelPointerUp = () => {
             if (!dragState) return;
-            const v = Math.abs(dragState.velocity);
+            const vSigned = dragState.velocity;      // Vorzeichen = Wischrichtung
+            const v = Math.abs(vSigned);
             const moved = dragState.moved;
             dragState = null;
             // Reiner Tap (kaum Bewegung) -> ignorieren, echter Swipe nötig
@@ -295,7 +297,10 @@ const EventPage = {
             // Schneller Swipe: viele Umdrehungen, kürzere Dauer (dreht schnell).
             const extraRotations = Math.min(9, Math.max(2, 2 + v * 3));
             const duration = Math.min(8500, Math.max(3500, 7000 - v * 900));
-            spin(false, { extraRotations, duration });
+            // Nachdrehung in Wischrichtung fortsetzen (rotation folgt dem Finger
+            // mit += d, daher entspricht das Vorzeichen der Rotationsrichtung).
+            const direction = vSigned >= 0 ? 1 : -1;
+            spin(false, { extraRotations, duration, direction });
         };
 
         const nextRound = () => {
