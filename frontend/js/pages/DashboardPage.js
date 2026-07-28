@@ -81,7 +81,7 @@ const DashboardPage = {
         };
         const addBorder = () => {
             if (!Array.isArray(formSettings.value.borders)) formSettings.value.borders = [];
-            formSettings.value.borders.push({ fill: 'solid', c1: '#C8A866', c2: '#8A6D3B', width: 5, glow: false });
+            formSettings.value.borders.push({ fill: 'solid', c1: '#C8A866', c2: '#8A6D3B', width: 5, glow: false, gap: 2, angle: 45, stripes: 12 });
         };
         const removeBorder = (idx) => {
             formSettings.value.borders.splice(idx, 1);
@@ -118,10 +118,13 @@ const DashboardPage = {
                 rim_color: sets.rim_color || CONFIG.DEFAULTS.rim_color,
                 hub_color: sets.hub_color || CONFIG.DEFAULTS.hub_color,
                 separator_color: sets.separator_color || CONFIG.DEFAULTS.separator_color,
+                separator_width: sets.separator_width != null && sets.separator_width !== '' ? sets.separator_width : CONFIG.DEFAULTS.separator_width,
                 overlay_strength: sets.overlay_strength != null && sets.overlay_strength !== '' ? sets.overlay_strength : CONFIG.DEFAULTS.overlay_strength,
                 label_enabled: (sets.label_enabled === '0' || sets.label_enabled === 0) ? '0' : '1',
                 label_color: sets.label_color || CONFIG.DEFAULTS.label_color,
                 label_scale: sets.label_scale != null && sets.label_scale !== '' ? sets.label_scale : CONFIG.DEFAULTS.label_scale,
+                label_shadow: (sets.label_shadow === '0' || sets.label_shadow === 0) ? '0' : '1',
+                label_shadow_color: sets.label_shadow_color || CONFIG.DEFAULTS.label_shadow_color,
                 spin_button_text: sets.spin_button_text || CONFIG.DEFAULTS.spin_button_text,
                 pointer_enabled: (sets.pointer_enabled === '0' || sets.pointer_enabled === 0) ? '0' : '1',
                 pointer_color: sets.pointer_color || CONFIG.DEFAULTS.pointer_color,
@@ -133,7 +136,9 @@ const DashboardPage = {
                 hub_shape: sets.hub_shape || CONFIG.DEFAULTS.hub_shape,
                 hub_text: sets.hub_text != null ? sets.hub_text : CONFIG.DEFAULTS.hub_text,
                 hub_text_color: sets.hub_text_color || CONFIG.DEFAULTS.hub_text_color,
+                hub_text_layout: sets.hub_text_layout || CONFIG.DEFAULTS.hub_text_layout,
                 hub_size: sets.hub_size != null && sets.hub_size !== '' ? sets.hub_size : CONFIG.DEFAULTS.hub_size,
+                hub_content_scale: sets.hub_content_scale != null && sets.hub_content_scale !== '' ? sets.hub_content_scale : CONFIG.DEFAULTS.hub_content_scale,
                 segment_palette: sets.segment_palette != null ? sets.segment_palette : CONFIG.DEFAULTS.segment_palette,
                 background_mode: sets.background_mode || CONFIG.DEFAULTS.background_mode,
                 background_color: sets.background_color || CONFIG.DEFAULTS.background_color,
@@ -328,12 +333,16 @@ const DashboardPage = {
             rim_color: formSettings.value.rim_color,
             hub_color: formSettings.value.hub_color,
             separator_color: formSettings.value.separator_color,
+            separator_width: formSettings.value.separator_width,
             overlay_strength: formSettings.value.overlay_strength,
             label_enabled: formSettings.value.label_enabled,
             label_color: formSettings.value.label_color,
             label_scale: formSettings.value.label_scale,
+            label_shadow: formSettings.value.label_shadow,
+            label_shadow_color: formSettings.value.label_shadow_color,
             label_font: formSettings.value.label_font,
             hub_font: formSettings.value.hub_font,
+            hub_content_scale: formSettings.value.hub_content_scale,
             pointer_enabled: formSettings.value.pointer_enabled,
             pointer_color: formSettings.value.pointer_color,
             pointer_style: formSettings.value.pointer_style,
@@ -597,10 +606,13 @@ const DashboardPage = {
                 formData.append('rim_color', formSettings.value.rim_color);
                 formData.append('hub_color', formSettings.value.hub_color);
                 formData.append('separator_color', formSettings.value.separator_color);
+                formData.append('separator_width', formSettings.value.separator_width);
                 formData.append('overlay_strength', formSettings.value.overlay_strength);
                 formData.append('label_enabled', formSettings.value.label_enabled === '0' ? '0' : '1');
                 formData.append('label_color', formSettings.value.label_color);
                 formData.append('label_scale', formSettings.value.label_scale);
+                formData.append('label_shadow', formSettings.value.label_shadow === '0' ? '0' : '1');
+                formData.append('label_shadow_color', formSettings.value.label_shadow_color);
                 formData.append('spin_button_text', formSettings.value.spin_button_text);
                 formData.append('pointer_enabled', formSettings.value.pointer_enabled === '0' ? '0' : '1');
                 formData.append('pointer_color', formSettings.value.pointer_color);
@@ -613,6 +625,7 @@ const DashboardPage = {
                 formData.append('hub_text', formSettings.value.hub_text || '');
                 formData.append('hub_text_color', formSettings.value.hub_text_color);
                 formData.append('hub_size', formSettings.value.hub_size);
+                formData.append('hub_content_scale', formSettings.value.hub_content_scale);
                 formData.append('segment_palette', formSettings.value.segment_palette || '');
                 formData.append('background_mode', formSettings.value.background_mode);
                 formData.append('background_color', formSettings.value.background_color);

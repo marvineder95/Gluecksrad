@@ -223,9 +223,10 @@ const EventPage = {
             return {
                 segment_fill_mode: s.segment_fill_mode, rim_enabled: s.rim_enabled, pointer_position: s.pointer_position,
                 rim_style: s.rim_style, rim_color: s.rim_color,
-                hub_color: s.hub_color, separator_color: s.separator_color, overlay_strength: s.overlay_strength,
+                hub_color: s.hub_color, separator_color: s.separator_color, separator_width: s.separator_width, overlay_strength: s.overlay_strength,
                 label_enabled: s.label_enabled, label_color: s.label_color, label_scale: s.label_scale,
-                label_font: s.label_font, hub_font: s.hub_font,
+                label_shadow: s.label_shadow, label_shadow_color: s.label_shadow_color,
+                label_font: s.label_font, hub_font: s.hub_font, hub_content_scale: s.hub_content_scale,
                 pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,
                 rim_glow: s.rim_glow, segment_gap: s.segment_gap, segment_palette: s.segment_palette,
                 hub_enabled: s.hub_enabled, hub_type: s.hub_type, hub_shape: s.hub_shape,

@@ -7,12 +7,13 @@ const WheelComponent = {
         const DEFAULT_SKIN = {
             segment_fill_mode: 'image', rim_enabled: '1', rim_style: 'gold', rim_color: '#C8A866',
             pointer_position: 'top',
-            hub_color: '#C8A866', separator_color: '#FFFFFF', overlay_strength: 30,
+            hub_color: '#C8A866', separator_color: '#FFFFFF', separator_width: 2, overlay_strength: 30,
             label_enabled: '1', label_color: '#FFFFFF', label_scale: 1,
+            label_shadow: '1', label_shadow_color: '#000000',
             pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',
             rim_glow: '0', segment_gap: 0, segment_palette: '',
             hub_enabled: '1', hub_type: 'shape', hub_shape: 'circle',
-            hub_text: '', hub_text_color: '#FFFFFF', hub_size: 0.16
+            hub_text: '', hub_text_color: '#FFFFFF', hub_size: 0.16, hub_content_scale: 1
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
         const gapDeg = Vue.computed(() => {
@@ -46,9 +47,21 @@ const WheelComponent = {
             const frac = isNaN(s) ? 0.16 : Math.max(0.08, Math.min(0.45, s));
             return radiusValue.value * frac;
         });
+        // Bogen für Mittel-Text: großer Bogen (240°) zentriert oben, damit
+        // längerer Text nicht abgeschnitten wird
         const hubArcPath = Vue.computed(() => {
-            const c = centerValue.value, r = hubR.value * 0.72;
-            return `M ${c - r} ${c} A ${r} ${r} 0 0 1 ${c + r} ${c}`;
+            const c = centerValue.value, r = hubR.value * 0.74;
+            const spanHalf = 120;
+            const sa = (-90 - spanHalf) * Math.PI / 180;
+            const ea = (-90 + spanHalf) * Math.PI / 180;
+            const x1 = (c + r * Math.cos(sa)).toFixed(1), y1 = (c + r * Math.sin(sa)).toFixed(1);
+            const x2 = (c + r * Math.cos(ea)).toFixed(1), y2 = (c + r * Math.sin(ea)).toFixed(1);
+            return `M ${x1} ${y1} A ${r.toFixed(1)} ${r.toFixed(1)} 0 1 1 ${x2} ${y2}`;
+        });
+        const labelShadow = Vue.computed(() => {
+            if (sk.value.label_shadow === '0') return 'none';
+            const col = sk.value.label_shadow_color || '#000000';
+            return '0 1px 4px ' + col + 'CC, 0 2px 10px ' + col + '99';
         });
         const hubDiamond = Vue.computed(() => {
             const c = centerValue.value, r = hubR.value;
@@ -57,16 +70,29 @@ const WheelComponent = {
         // Aussenränder (mehrere Ringe, von innen nach aussen gestapelt)
         const borderRings = Vue.computed(() => {
             const list = Array.isArray(props.borders) ? props.borders : [];
-            let r = radiusValue.value + 5;
+            let r = radiusValue.value;
             return list.map((b, i) => {
                 const w = Math.max(1, Number(b.width) || 4);
-                r += w / 2 + 2;
+                const gap = b.gap != null ? Math.max(0, Number(b.gap)) : 2;
+                r += gap + w / 2;
+                // Gradient-Richtung (Winkel -> Vektor in objectBoundingBox)
+                const ang = (Number(b.angle) || 0) * Math.PI / 180;
+                const grad = {
+                    x1: (0.5 - 0.5 * Math.cos(ang)).toFixed(3),
+                    y1: (0.5 - 0.5 * Math.sin(ang)).toFixed(3),
+                    x2: (0.5 + 0.5 * Math.cos(ang)).toFixed(3),
+                    y2: (0.5 + 0.5 * Math.sin(ang)).toFixed(3)
+                };
+                // Striped: Umfang in gleiche Segmente teilen
+                const stripes = Math.max(2, Math.min(60, Number(b.stripes) || 12));
+                const dash = (2 * Math.PI * r) / (stripes * 2);
                 const ring = {
                     id: i, r, width: w, glow: !!b.glow, fill: b.fill,
                     c1: b.c1 || '#C8A866', c2: b.c2 || b.c1 || '#C8A866',
-                    stroke: b.fill === 'gradient' ? 'url(#bgrad' + i + ')' : (b.c1 || '#C8A866')
+                    stroke: b.fill === 'gradient' ? 'url(#bgrad' + i + ')' : (b.c1 || '#C8A866'),
+                    grad, dash
                 };
-                r += w / 2 + 2;
+                r += w / 2;
                 return ring;
             });
         });
@@ -323,6 +349,7 @@ const WheelComponent = {
             hubDiamond,
             hubStar,
             hubArcPath,
+            labelShadow,
             borderRings,
             config: CONFIG
         };

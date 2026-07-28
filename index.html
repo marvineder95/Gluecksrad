@@ -39,8 +39,8 @@
                         <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                 </filter>
-                <!-- Gradienten für die Aussenränder -->
-                <linearGradient v-for="ring in borderRings" :key="'bgrad'+ring.id" :id="'bgrad'+ring.id" x1="0%" y1="0%" x2="100%" y2="100%">
+                <!-- Gradienten für die Aussenränder (mit Richtung) -->
+                <linearGradient v-for="ring in borderRings" :key="'bgrad'+ring.id" :id="'bgrad'+ring.id" :x1="ring.grad.x1" :y1="ring.grad.y1" :x2="ring.grad.x2" :y2="ring.grad.y2">
                     <stop offset="0%" :stop-color="ring.c1"/>
                     <stop offset="100%" :stop-color="ring.c2"/>
                 </linearGradient>
@@ -69,9 +69,11 @@
                 <path v-for="tp in textPaths" :key="tp.id" :id="tp.id" :d="tp.d" fill="none" />
             </defs>
 
-            <!-- === AUSSENRÄNDER (mehrere Ringe, solid/gradient/glow) === -->
+            <!-- === AUSSENRÄNDER (mehrere Ringe: solid/gradient/striped/glow) === -->
             <g v-for="ring in borderRings" :key="'border'+ring.id" :filter="ring.glow ? 'url(#rimGlow)' : null" style="pointer-events: none;">
-                <circle :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.stroke" :stroke-width="ring.width"/>
+                <circle v-if="ring.fill !== 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.stroke" :stroke-width="ring.width"/>
+                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c1" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash"/>
+                <circle v-if="ring.fill === 'striped'" :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.c2" :stroke-width="ring.width" :stroke-dasharray="ring.dash + ' ' + ring.dash" :stroke-dashoffset="ring.dash"/>
             </g>
 
             <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
@@ -95,7 +97,7 @@
                             :font-size="segment.fontSize * labelScale"
                             font-weight="700"
                             :font-family="(sk.label_font || font || 'Montserrat') + ', sans-serif'"
-                            style="text-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);">
+                            :style="{ textShadow: labelShadow }">
                             <textPath :href="'#' + textPaths[index].id"
                                 startOffset="50%"
                                 text-anchor="middle">
@@ -117,7 +119,7 @@
                         </g>
                     </g>
                     <!-- Subtle separator stroke (NOT clipped, drawn on top of adjacent segments) -->
-                    <path :d="segment.path" fill="none" :stroke="sk.separator_color" stroke-width="2" opacity="0.6" style="pointer-events: none;"/>
+                    <path :d="segment.path" fill="none" :stroke="sk.separator_color" :stroke-width="sk.separator_width" opacity="0.6" style="pointer-events: none;"/>
                 </g>
             </g>
 
@@ -148,7 +150,7 @@
                 <line :x1="center" :y1="center"
                       :x2="center + radius * Math.cos((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
                       :y2="center + radius * Math.sin((index * (360 / segmentPaths.length) - 90) * Math.PI / 180)"
-                      :stroke="sk.separator_color" stroke-width="1.5" opacity="0.5"/>
+                      :stroke="sk.separator_color" :stroke-width="Math.max(1, sk.separator_width * 0.75)" opacity="0.5"/>
             </g>
 
             <!-- === HUB / MITTELELEMENT (immer zentriert) === -->
@@ -166,11 +168,11 @@
                 <!-- TEXT im Mittelpunkt: gerade -->
                 <text v-else-if="sk.hub_type === 'text' && sk.hub_text_layout !== 'arch'" :x="center" :y="center" text-anchor="middle"
                       dominant-baseline="central" :fill="sk.hub_text_color"
-                      :font-size="hubR * 0.5" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
+                      :font-size="hubR * 0.5 * (sk.hub_content_scale || 1)" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
                 <!-- TEXT im Mittelpunkt: gebogen (arch) -->
                 <g v-else-if="sk.hub_type === 'text' && sk.hub_text_layout === 'arch'">
                     <path :id="'hubArc'" :d="hubArcPath" fill="none"/>
-                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">
+                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34 * (sk.hub_content_scale || 1)" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">
                         <textPath :href="'#hubArc'" startOffset="50%" text-anchor="middle">{{ sk.hub_text }}</textPath>
                     </text>
                 </g>
@@ -178,7 +180,7 @@
                 <g v-else-if="sk.hub_type === 'logo' && logo">
                     <clipPath :id="'hubClip'"><circle :cx="center" :cy="center" :r="hubR"/></clipPath>
                     <circle :cx="center" :cy="center" :r="hubR" fill="#FFFFFF"/>
-                    <image :href="logo" :x="center - hubR" :y="center - hubR" :width="hubR * 2" :height="hubR * 2"
+                    <image :href="logo" :x="center - hubR * (sk.hub_content_scale || 1)" :y="center - hubR * (sk.hub_content_scale || 1)" :width="hubR * 2 * (sk.hub_content_scale || 1)" :height="hubR * 2 * (sk.hub_content_scale || 1)"
                            preserveAspectRatio="xMidYMid meet" :clip-path="'url(#hubClip)'"/>
                 </g>
                 <!-- dezenter Rand -->
@@ -1235,21 +1237,21 @@
                                 <button v-if="formSettings.background_image" class="upload-btn" @click="$refs.bgInput.click()">Bild ändern</button>
                             </div>
 
-                            <!-- Primary Color -->
+                            <!-- Titel-Farbe (Vorschau-Headline "VIEL GLÜCK!") -->
                             <div class="branding-item">
-                                <label>Primärfarbe</label>
+                                <label>Titel-Farbe</label>
                                 <color-picker v-model="formSettings.primary_color"></color-picker>
                             </div>
 
-                            <!-- Secondary Color -->
+                            <!-- Titel-Glow -->
                             <div class="branding-item">
-                                <label>Sekundärfarbe</label>
+                                <label>Titel-Glow / Schatten</label>
                                 <color-picker v-model="formSettings.secondary_color"></color-picker>
                             </div>
 
-                            <!-- Accent Color -->
+                            <!-- Akzent-Ring ums Rad -->
                             <div class="branding-item">
-                                <label>Akzentfarbe</label>
+                                <label>Akzent-Ring (ums Rad)</label>
                                 <color-picker v-model="formSettings.accent_color"></color-picker>
                             </div>
 
@@ -1296,8 +1298,12 @@
                                     </select>
                                 </div>
                                 <div class="branding-item">
-                                    <label>Trennlinien</label>
+                                    <label>Trennlinien-Farbe</label>
                                     <color-picker v-model="formSettings.separator_color"></color-picker>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Trennlinien-Dicke ({{ formSettings.separator_width }}px)</label>
+                                    <input type="range" class="design-range" min="0" max="10" step="0.5" v-model.number="formSettings.separator_width">
                                 </div>
                                 <div class="branding-item" v-if="formSettings.segment_fill_mode === 'image'">
                                     <label>Abdunklung ({{ formSettings.overlay_strength }}%)</label>
@@ -1363,19 +1369,32 @@
                                         <select class="admin-select" v-model="b.fill">
                                             <option value="solid">Einfarbig</option>
                                             <option value="gradient">Verlauf</option>
+                                            <option value="striped">Gestreift (Roulette)</option>
                                         </select>
                                     </div>
                                     <div class="branding-item">
-                                        <label>{{ b.fill === 'gradient' ? 'Farbe 1' : 'Farbe' }}</label>
+                                        <label>{{ b.fill === 'solid' ? 'Farbe' : 'Farbe 1' }}</label>
                                         <color-picker v-model="b.c1"></color-picker>
                                     </div>
-                                    <div class="branding-item" v-if="b.fill === 'gradient'">
+                                    <div class="branding-item" v-if="b.fill !== 'solid'">
                                         <label>Farbe 2</label>
                                         <color-picker v-model="b.c2"></color-picker>
+                                    </div>
+                                    <div class="branding-item" v-if="b.fill === 'gradient'">
+                                        <label>Verlauf-Richtung ({{ b.angle || 0 }}°)</label>
+                                        <input type="range" class="design-range" min="0" max="360" step="15" v-model.number="b.angle">
+                                    </div>
+                                    <div class="branding-item" v-if="b.fill === 'striped'">
+                                        <label>Streifen-Anzahl ({{ b.stripes || 12 }})</label>
+                                        <input type="range" class="design-range" min="2" max="40" step="1" v-model.number="b.stripes">
                                     </div>
                                     <div class="branding-item">
                                         <label>Breite ({{ b.width }}px)</label>
                                         <input type="range" class="design-range" min="1" max="20" step="1" v-model.number="b.width">
+                                    </div>
+                                    <div class="branding-item">
+                                        <label>Abstand ({{ b.gap != null ? b.gap : 2 }}px)</label>
+                                        <input type="range" class="design-range" min="0" max="30" step="1" v-model.number="b.gap">
                                     </div>
                                     <div class="branding-item">
                                         <label>Glow (Neon)</label>
@@ -1455,8 +1474,12 @@
                                     <color-picker v-model="formSettings.hub_text_color"></color-picker>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1'">
-                                    <label>Größe ({{ Math.round(formSettings.hub_size * 100) }}%)</label>
+                                    <label>Element-Größe ({{ Math.round(formSettings.hub_size * 100) }}%)</label>
                                     <input type="range" class="design-range" min="0.08" max="0.45" step="0.01" v-model="formSettings.hub_size">
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type !== 'shape'">
+                                    <label>Inhalt-Größe ({{ Math.round(formSettings.hub_content_scale * 100) }}%)</label>
+                                    <input type="range" class="design-range" min="0.4" max="1.6" step="0.05" v-model.number="formSettings.hub_content_scale">
                                 </div>
                             </div>
                         </div>
@@ -1501,6 +1524,17 @@
                                         <option value="Roboto">Roboto</option>
                                         <option value="Open Sans">Open Sans</option>
                                     </select>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1'">
+                                    <label>Schatten / Glow</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" v-model="formSettings.label_shadow" :true-value="'1'" :false-value="'0'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.label_enabled === '1' && formSettings.label_shadow === '1'">
+                                    <label>Schatten-Farbe</label>
+                                    <color-picker v-model="formSettings.label_shadow_color"></color-picker>
                                 </div>
                             </div>
                         </div>

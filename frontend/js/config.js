@@ -44,10 +44,13 @@ const CONFIG = {
         pointer_position: 'top',      // top | bottom | both
         hub_color: '#C8A866',
         separator_color: '#FFFFFF',
+        separator_width: 2,           // Dicke der Trennlinien
         overlay_strength: 30,         // Abdunklung der Segment-Bilder in % (0-70)
         label_enabled: '1',
         label_color: '#FFFFFF',
         label_scale: 1,               // Multiplikator der Label-Größe (0.7-1.4)
+        label_shadow: '1',            // Schatten/Glow der Labels an/aus
+        label_shadow_color: '#000000',
         spin_button_text: 'Drehen',
         // Erweiterte Rad-Stil-Tokens (für Design-Presets)
         pointer_enabled: '1',
@@ -63,6 +66,7 @@ const CONFIG = {
         hub_text_color: '#FFFFFF',
         hub_text_layout: 'straight',  // straight | arch (gebogen)
         hub_size: 0.16,               // Anteil des Radius (0.08-0.45)
+        hub_content_scale: 1,         // Größe von Logo/Text INNERHALB des Hubs (0.4-1.6)
         segment_palette: '',          // intern (UI entfernt)
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
         background_color: '#0F172A',
