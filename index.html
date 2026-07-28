@@ -1220,12 +1220,12 @@
                                 <div class="theme-grid">
                                     <div v-for="theme in themes" :key="theme.id"
                                          :class="['theme-card', { active: formSettings.theme === theme.id }]"
-                                         @click="formSettings.theme = theme.id">
+                                         @click="selectTheme(theme.id)">
                                         <img :src="theme.image" :alt="theme.name">
                                         <div class="theme-name">{{ theme.name }}</div>
                                     </div>
                                     <div :class="['theme-card', { active: formSettings.theme === 'custom' }]"
-                                         @click="formSettings.theme = 'custom'">
+                                         @click="selectTheme('custom')">
                                         <div class="theme-card-custom">
                                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                                         </div>

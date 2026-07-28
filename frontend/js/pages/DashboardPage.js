@@ -611,6 +611,14 @@ const DashboardPage = {
             if (!file || !file.type || !file.type.startsWith('image/')) return;
             bgFile.value = file;
             formSettings.value.background_image = URL.createObjectURL(file);
+            // Ein hochgeladenes Bild überschreibt den Einfarbig-Modus
+            formSettings.value.theme = 'custom';
+            formSettings.value.background_mode = 'theme';
+        };
+        // Theme-/Bildauswahl überschreibt ebenfalls den Einfarbig-Modus
+        const selectTheme = (themeId) => {
+            formSettings.value.theme = themeId;
+            formSettings.value.background_mode = 'theme';
         };
         const onBgChange = (event) => setBgFile(event.target.files[0]);
         const onBgDrop = (event) => { event.preventDefault(); setBgFile(event.dataTransfer.files[0]); };
@@ -913,6 +921,7 @@ const DashboardPage = {
             onLogoDrop,
             onBgChange,
             onBgDrop,
+            selectTheme,
             saveAll,
             goToWebsite,
             logout,
