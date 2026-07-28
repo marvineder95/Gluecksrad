@@ -1838,6 +1838,13 @@ html {
     background: #FFFBEB;
 }
 
+.upload-zone.dragover {
+    border-color: #C8A866;
+    background: #FEF6E0;
+    box-shadow: 0 0 0 3px rgba(200, 168, 102, 0.25);
+    transform: scale(1.01);
+}
+
 .upload-preview {
     width: 100%;
     max-height: 120px;

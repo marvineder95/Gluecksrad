@@ -416,12 +416,13 @@ const DashboardPage = {
             showSegmentModal.value = true;
         };
 
-        const onSegmentImageChange = (event) => {
-            segmentImageFile.value = event.target.files[0] || null;
-            if (segmentImageFile.value) {
-                segmentForm.value.image = URL.createObjectURL(segmentImageFile.value);
-            }
+        const setSegmentImageFile = (file) => {
+            if (!file || !file.type || !file.type.startsWith('image/')) return;
+            segmentImageFile.value = file;
+            segmentForm.value.image = URL.createObjectURL(file);
         };
+        const onSegmentImageChange = (event) => setSegmentImageFile(event.target.files[0]);
+        const onSegmentImageDrop = (event) => { event.preventDefault(); setSegmentImageFile(event.dataTransfer.files[0]); };
 
         const validateSegmentForm = () => {
             const errors = {};
@@ -563,19 +564,21 @@ const DashboardPage = {
         };
 
         // Branding uploads
-        const onLogoChange = (event) => {
-            logoFile.value = event.target.files[0] || null;
-            if (logoFile.value) {
-                formSettings.value.logo = URL.createObjectURL(logoFile.value);
-            }
+        const setLogoFile = (file) => {
+            if (!file || !file.type || !file.type.startsWith('image/')) return;
+            logoFile.value = file;
+            formSettings.value.logo = URL.createObjectURL(file);
         };
+        const onLogoChange = (event) => setLogoFile(event.target.files[0]);
+        const onLogoDrop = (event) => { event.preventDefault(); setLogoFile(event.dataTransfer.files[0]); };
 
-        const onBgChange = (event) => {
-            bgFile.value = event.target.files[0] || null;
-            if (bgFile.value) {
-                formSettings.value.background_image = URL.createObjectURL(bgFile.value);
-            }
+        const setBgFile = (file) => {
+            if (!file || !file.type || !file.type.startsWith('image/')) return;
+            bgFile.value = file;
+            formSettings.value.background_image = URL.createObjectURL(file);
         };
+        const onBgChange = (event) => setBgFile(event.target.files[0]);
+        const onBgDrop = (event) => { event.preventDefault(); setBgFile(event.dataTransfer.files[0]); };
 
         // Save all
         const saveAll = async () => {
@@ -829,7 +832,9 @@ const DashboardPage = {
             themes,
             segmentThemes,
             onLogoChange,
+            onLogoDrop,
             onBgChange,
+            onBgDrop,
             saveAll,
             goToWebsite,
             logout,
@@ -855,6 +860,7 @@ const DashboardPage = {
             segmentEditorCount,
             canEditSegmentImage,
             onSegmentImageChange,
+            onSegmentImageDrop,
             segmentFormErrors,
             showPasswordModal,
             passwordForm,

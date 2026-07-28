@@ -1188,11 +1188,11 @@
                             <!-- Logo Upload -->
                             <div class="branding-item">
                                 <label>Logo</label>
-                                <div class="upload-zone" @click="$refs.logoInput.click()">
+                                <div class="upload-zone" @click="$refs.logoInput.click()" @dragover.prevent @dragenter.prevent="$event.currentTarget.classList.add('dragover')" @dragleave="$event.currentTarget.classList.remove('dragover')" @drop="onLogoDrop($event); $event.currentTarget.classList.remove('dragover')">
                                     <img v-if="formSettings.logo" :src="formSettings.logo" class="upload-preview" alt="Logo">
                                     <div v-else>
                                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                        <div class="upload-label">Logo hochladen</div>
+                                        <div class="upload-label">Logo hochladen oder hierher ziehen</div>
                                     </div>
                                     <input type="file" ref="logoInput" @change="onLogoChange" accept="image/*" style="display: none;">
                                 </div>
@@ -1222,11 +1222,11 @@
                             <!-- Custom Background Upload -->
                             <div v-if="formSettings.theme === 'custom'" class="branding-item">
                                 <label>Eigenes Hintergrundbild</label>
-                                <div class="upload-zone" @click="$refs.bgInput.click()">
+                                <div class="upload-zone" @click="$refs.bgInput.click()" @dragover.prevent @dragenter.prevent="$event.currentTarget.classList.add('dragover')" @dragleave="$event.currentTarget.classList.remove('dragover')" @drop="onBgDrop($event); $event.currentTarget.classList.remove('dragover')">
                                     <img v-if="formSettings.background_image" :src="formSettings.background_image" class="upload-preview" alt="Hintergrund">
                                     <div v-else>
                                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                        <div class="upload-label">Bild hochladen</div>
+                                        <div class="upload-label">Bild hochladen oder hierher ziehen</div>
                                     </div>
                                     <input type="file" ref="bgInput" @change="onBgChange" accept="image/*" style="display: none;">
                                 </div>
@@ -2054,11 +2054,11 @@
                         <div class="admin-form-group">
                             <label>Produktbild (optional)</label>
                             <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 6px;">💡 Quadratisches Bild (1:1) empfohlen für beste Darstellung</div>
-                            <div class="upload-zone" @click="$refs.segmentImageInput.click()" style="padding: 16px;">
+                            <div class="upload-zone" @click="$refs.segmentImageInput.click()" style="padding: 16px;" @dragover.prevent @dragenter.prevent="$event.currentTarget.classList.add('dragover')" @dragleave="$event.currentTarget.classList.remove('dragover')" @drop="onSegmentImageDrop($event); $event.currentTarget.classList.remove('dragover')">
                                 <img v-if="segmentForm.image" :src="segmentForm.image" class="upload-preview" style="max-height: 80px;" alt="Produktbild">
                                 <div v-else>
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                    <div class="upload-label">Produktbild hochladen</div>
+                                    <div class="upload-label">Produktbild hochladen oder hierher ziehen</div>
                                 </div>
                                 <input type="file" ref="segmentImageInput" @change="onSegmentImageChange" accept="image/*" style="display: none;">
                             </div>
