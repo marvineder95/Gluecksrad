@@ -218,8 +218,15 @@ const EventPage = {
                 pointer_enabled: s.pointer_enabled, pointer_color: s.pointer_color, pointer_style: s.pointer_style,
                 rim_glow: s.rim_glow, segment_gap: s.segment_gap, segment_palette: s.segment_palette,
                 hub_enabled: s.hub_enabled, hub_type: s.hub_type, hub_shape: s.hub_shape,
-                hub_text: s.hub_text, hub_text_color: s.hub_text_color, hub_size: s.hub_size
+                hub_text: s.hub_text, hub_text_color: s.hub_text_color, hub_size: s.hub_size,
+                hub_text_layout: s.hub_text_layout
             };
+        });
+        const wheelBorders = Vue.computed(() => {
+            try {
+                const arr = JSON.parse(settings.value.wheel_borders || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) { return []; }
         });
         const wheelFont = Vue.computed(() => settings.value.font_family || 'Montserrat');
         const wheelAccent = Vue.computed(() => settings.value.accent_color || '');
@@ -262,7 +269,7 @@ const EventPage = {
         return {
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
             confettiCanvas, spin, nextRound, bgStyle, handleSecretClick, logoUrl,
-            skin, wheelFont, wheelAccent, buttonStyle, buttonText,
+            skin, wheelFont, wheelAccent, buttonStyle, buttonText, wheelBorders,
             wheelSize, wheelAreaRef, navigateTo,
             leadCaptureEnabled, showLeadForm, leadForm, leadError,
             submitLead, skipLead, currentLeadId, leadSkipped, consentGiven

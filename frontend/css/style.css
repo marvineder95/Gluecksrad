@@ -1443,6 +1443,36 @@ html {
     cursor: pointer;
 }
 
+.border-row {
+    padding: 14px;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: #FBFCFE;
+}
+.border-row-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.border-remove {
+    background: none;
+    border: none;
+    color: #EF4444;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.border-remove:hover {
+    text-decoration: underline;
+}
+
 .preview-hint {
     display: flex;
     align-items: flex-start;

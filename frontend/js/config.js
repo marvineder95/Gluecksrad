@@ -55,6 +55,7 @@ const CONFIG = {
         hub_shape: 'circle',          // circle | ring | diamond | star | glow
         hub_text: '',
         hub_text_color: '#FFFFFF',
+        hub_text_layout: 'straight',  // straight | arch (gebogen)
         hub_size: 0.16,               // Anteil des Radius (0.08-0.45)
         segment_palette: '',          // intern (UI entfernt)
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
@@ -63,7 +64,10 @@ const CONFIG = {
         button_shape: 'pill',         // pill | rounded | square
         button_size: 1,               // 0.8-1.4
         button_color: '#1E3A8A',
-        button_text_color: '#FFFFFF'
+        button_text_color: '#FFFFFF',
+        button_position: 'below',     // below | above
+        // Aussenränder: Liste (mehrere Ringe), je solid|gradient
+        wheel_borders: '[{"fill":"gradient","c1":"#E8D5A3","c2":"#A68B4B","width":6,"glow":false}]'
     },
     ANIMATION: {
         confetti_particle_count: 200,

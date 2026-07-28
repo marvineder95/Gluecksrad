@@ -1,5 +1,5 @@
 const WheelComponent = {
-    props: ['segments', 'rotation', 'size', 'font', 'accent', 'skin', 'logo'],
+    props: ['segments', 'rotation', 'size', 'font', 'accent', 'skin', 'logo', 'borders'],
     setup(props) {
         const svgRef = Vue.ref(null);
 
@@ -46,10 +46,31 @@ const WheelComponent = {
             const frac = isNaN(s) ? 0.16 : Math.max(0.08, Math.min(0.45, s));
             return radiusValue.value * frac;
         });
+        const hubArcPath = Vue.computed(() => {
+            const c = centerValue.value, r = hubR.value * 0.72;
+            return `M ${c - r} ${c} A ${r} ${r} 0 0 1 ${c + r} ${c}`;
+        });
         const hubDiamond = Vue.computed(() => {
             const c = centerValue.value, r = hubR.value;
             return `${c},${c - r} ${c + r},${c} ${c},${c + r} ${c - r},${c}`;
         });
+        // Aussenränder (mehrere Ringe, von innen nach aussen gestapelt)
+        const borderRings = Vue.computed(() => {
+            const list = Array.isArray(props.borders) ? props.borders : [];
+            let r = radiusValue.value + 5;
+            return list.map((b, i) => {
+                const w = Math.max(1, Number(b.width) || 4);
+                r += w / 2 + 2;
+                const ring = {
+                    id: i, r, width: w, glow: !!b.glow, fill: b.fill,
+                    c1: b.c1 || '#C8A866', c2: b.c2 || b.c1 || '#C8A866',
+                    stroke: b.fill === 'gradient' ? 'url(#bgrad' + i + ')' : (b.c1 || '#C8A866')
+                };
+                r += w / 2 + 2;
+                return ring;
+            });
+        });
+
         const hubStar = Vue.computed(() => {
             const c = centerValue.value, R = hubR.value, r = R * 0.42, pts = [];
             for (let i = 0; i < 10; i++) {
@@ -300,6 +321,8 @@ const WheelComponent = {
             hubR,
             hubDiamond,
             hubStar,
+            hubArcPath,
+            borderRings,
             config: CONFIG
         };
     },

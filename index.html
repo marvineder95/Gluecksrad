@@ -39,6 +39,11 @@
                         <feMergeNode in="SourceGraphic"/>
                     </feMerge>
                 </filter>
+                <!-- Gradienten für die Aussenränder -->
+                <linearGradient v-for="ring in borderRings" :key="'bgrad'+ring.id" :id="'bgrad'+ring.id" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" :stop-color="ring.c1"/>
+                    <stop offset="100%" :stop-color="ring.c2"/>
+                </linearGradient>
                 <!-- Gold rim gradients -->
                 <linearGradient id="goldRim1" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#F0E2B8"/>
@@ -64,12 +69,9 @@
                 <path v-for="tp in textPaths" :key="tp.id" :id="tp.id" :d="tp.d" fill="none" />
             </defs>
 
-            <!-- === OUTER PREMIUM RIM === -->
-            <g v-if="sk.rim_enabled !== '0'" :filter="sk.rim_glow === '1' ? 'url(#rimGlow)' : null">
-                <circle v-if="accent" :cx="center" :cy="center" :r="radius + 18" fill="none" :stroke="accent" stroke-width="3" opacity="0.55"/>
-                <circle :cx="center" :cy="center" :r="radius + 14" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim1)' : sk.rim_color" stroke-width="5" opacity="0.95"/>
-                <circle :cx="center" :cy="center" :r="radius + 10" fill="none" :stroke="sk.rim_style === 'gold' ? 'url(#goldRim2)' : sk.rim_color" stroke-width="2" opacity="0.8"/>
-                <circle :cx="center" :cy="center" :r="radius + 7" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+            <!-- === AUSSENRÄNDER (mehrere Ringe, solid/gradient/glow) === -->
+            <g v-for="ring in borderRings" :key="'border'+ring.id" :filter="ring.glow ? 'url(#rimGlow)' : null" style="pointer-events: none;">
+                <circle :cx="center" :cy="center" :r="ring.r" fill="none" :stroke="ring.stroke" :stroke-width="ring.width"/>
             </g>
 
             <!-- === SEGMENTS (background + overlay + content, all clipped) === -->
@@ -156,13 +158,20 @@
                 <g v-if="sk.hub_type === 'shape'">
                     <circle v-if="sk.hub_shape === 'ring'" :cx="center" :cy="center" :r="hubR * 0.9" fill="#FFFFFF"/>
                     <circle v-else-if="sk.hub_shape === 'glow'" :cx="center" :cy="center" :r="hubR * 0.45" fill="#FFFFFF"/>
-                    <polygon v-else-if="sk.hub_shape === 'diamond'" :points="hubDiamond" :fill="accent || sk.hub_text_color"/>
-                    <polygon v-else-if="sk.hub_shape === 'star'" :points="hubStar" :fill="accent || sk.hub_text_color"/>
+                    <polygon v-else-if="sk.hub_shape === 'diamond'" :points="hubDiamond" :fill="sk.hub_text_color"/>
+                    <polygon v-else-if="sk.hub_shape === 'star'" :points="hubStar" :fill="sk.hub_text_color"/>
                 </g>
-                <!-- TEXT im Mittelpunkt -->
-                <text v-else-if="sk.hub_type === 'text'" :x="center" :y="center" text-anchor="middle"
+                <!-- TEXT im Mittelpunkt: gerade -->
+                <text v-else-if="sk.hub_type === 'text' && sk.hub_text_layout !== 'arch'" :x="center" :y="center" text-anchor="middle"
                       dominant-baseline="central" :fill="sk.hub_text_color"
                       :font-size="hubR * 0.5" :font-family="(font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
+                <!-- TEXT im Mittelpunkt: gebogen (arch) -->
+                <g v-else-if="sk.hub_type === 'text' && sk.hub_text_layout === 'arch'">
+                    <path :id="'hubArc'" :d="hubArcPath" fill="none"/>
+                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34" :font-family="(font || 'Montserrat') + ', sans-serif'" font-weight="700">
+                        <textPath :href="'#hubArc'" startOffset="50%" text-anchor="middle">{{ sk.hub_text }}</textPath>
+                    </text>
+                </g>
                 <!-- LOGO im Mittelpunkt -->
                 <g v-else-if="sk.hub_type === 'logo' && logo">
                     <clipPath :id="'hubClip'"><circle :cx="center" :cy="center" :r="hubR"/></clipPath>
@@ -300,7 +309,7 @@
             <div class="wheel-area" ref="wheelAreaRef">
                 <div class="wheel-wrapper" :style="{ maxWidth: wheelSize + 'px', maxHeight: wheelSize + 'px' }">
                     <wheel-component :segments="segments" :rotation="rotation" :size="wheelSize"
-                        :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl"></wheel-component>
+                        :skin="skin" :font="wheelFont" :accent="wheelAccent" :logo="logoUrl" :borders="wheelBorders"></wheel-component>
                 </div>
             </div>
 
@@ -1140,7 +1149,7 @@
                                             VIEL GLÜCK!
                                         </div>
                                         <wheel-component :segments="segments" :rotation="previewRotation" :size="400"
-                                            :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin" :logo="formSettings.logo"></wheel-component>
+                                            :font="formSettings.font_family" :accent="formSettings.accent_color" :skin="previewSkin" :logo="formSettings.logo" :borders="formSettings.borders"></wheel-component>
                                         <button class="preview-stage-btn" :style="previewButtonStyle">
                                             {{ formSettings.spin_button_text || 'Drehen' }}
                                         </button>
@@ -1278,41 +1287,12 @@
                                     </select>
                                 </div>
                                 <div class="branding-item">
-                                    <label>Außenrand</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" v-model="formSettings.rim_enabled" :true-value="'1'" :false-value="'0'">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                                <div class="branding-item" v-if="formSettings.rim_enabled === '1'">
-                                    <label>Rand-Stil</label>
-                                    <select class="admin-select" v-model="formSettings.rim_style">
-                                        <option value="gold">Gold (Premium)</option>
-                                        <option value="solid">Einfarbig</option>
-                                    </select>
-                                </div>
-                                <div class="branding-item" v-if="formSettings.rim_enabled === '1' && formSettings.rim_style === 'solid'">
-                                    <label>Randfarbe</label>
-                                    <color-picker v-model="formSettings.rim_color"></color-picker>
-                                </div>
-                                <div class="branding-item" v-if="formSettings.rim_style === 'solid'">
-                                    <label>Nabe (Mitte)</label>
-                                    <color-picker v-model="formSettings.hub_color"></color-picker>
-                                </div>
-                                <div class="branding-item">
                                     <label>Trennlinien</label>
                                     <color-picker v-model="formSettings.separator_color"></color-picker>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.segment_fill_mode === 'image'">
                                     <label>Abdunklung ({{ formSettings.overlay_strength }}%)</label>
                                     <input type="range" class="design-range" min="0" max="70" step="5" v-model="formSettings.overlay_strength">
-                                </div>
-                                <div class="branding-item">
-                                    <label>Rand-Glow (Neon)</label>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" v-model="formSettings.rim_glow" :true-value="'1'" :false-value="'0'">
-                                        <span class="toggle-slider"></span>
-                                    </label>
                                 </div>
                                 <div class="branding-item">
                                     <label>Segment-Abstand ({{ formSettings.segment_gap }}°)</label>
@@ -1360,6 +1340,49 @@
                             </div>
                         </div>
 
+                        <!-- Außenränder (mehrere) -->
+                        <div class="design-section">
+                            <label class="design-section-label">Außenränder</label>
+                            <div class="border-row" v-for="(b, i) in formSettings.borders" :key="i">
+                                <div class="border-row-head">
+                                    <span>Rand {{ i + 1 }}</span>
+                                    <button type="button" class="border-remove" @click="removeBorder(i)">Entfernen</button>
+                                </div>
+                                <div class="design-grid">
+                                    <div class="branding-item">
+                                        <label>Füllung</label>
+                                        <select class="admin-select" v-model="b.fill">
+                                            <option value="solid">Einfarbig</option>
+                                            <option value="gradient">Verlauf</option>
+                                        </select>
+                                    </div>
+                                    <div class="branding-item">
+                                        <label>{{ b.fill === 'gradient' ? 'Farbe 1' : 'Farbe' }}</label>
+                                        <color-picker v-model="b.c1"></color-picker>
+                                    </div>
+                                    <div class="branding-item" v-if="b.fill === 'gradient'">
+                                        <label>Farbe 2</label>
+                                        <color-picker v-model="b.c2"></color-picker>
+                                    </div>
+                                    <div class="branding-item">
+                                        <label>Breite ({{ b.width }}px)</label>
+                                        <input type="range" class="design-range" min="1" max="20" step="1" v-model.number="b.width">
+                                    </div>
+                                    <div class="branding-item">
+                                        <label>Glow (Neon)</label>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" v-model="b.glow">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-add" @click="addBorder" style="margin-top: 12px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Rand hinzufügen
+                            </button>
+                        </div>
+
                         <!-- Mittelelement -->
                         <div class="design-section">
                             <label class="design-section-label">Mittelelement</label>
@@ -1392,6 +1415,13 @@
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'text'" style="grid-column: 1 / -1;">
                                     <label>Text in der Mitte</label>
                                     <input type="text" class="admin-input" v-model="formSettings.hub_text" placeholder="z.B. DREHEN">
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'text'">
+                                    <label>Text-Ausrichtung</label>
+                                    <select class="admin-select" v-model="formSettings.hub_text_layout">
+                                        <option value="straight">Gerade</option>
+                                        <option value="arch">Gebogen (Bogen)</option>
+                                    </select>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type !== 'logo'">
                                     <label>Grundfarbe</label>
@@ -1463,6 +1493,13 @@
                                         <option value="pill">Pille (rund)</option>
                                         <option value="rounded">Abgerundet</option>
                                         <option value="square">Eckig</option>
+                                    </select>
+                                </div>
+                                <div class="branding-item">
+                                    <label>Position</label>
+                                    <select class="admin-select" v-model="formSettings.button_position">
+                                        <option value="below">Unter dem Rad</option>
+                                        <option value="above">Über dem Rad</option>
                                     </select>
                                 </div>
                                 <div class="branding-item">

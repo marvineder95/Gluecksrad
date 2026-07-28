@@ -44,6 +44,7 @@ $DEFAULTS = [
     'hub_shape' => 'circle',
     'hub_text' => '',
     'hub_text_color' => '#FFFFFF',
+    'hub_text_layout' => 'straight',
     'hub_size' => '0.16',
     'segment_palette' => '',
     'background_mode' => 'theme',
@@ -51,7 +52,9 @@ $DEFAULTS = [
     'button_shape' => 'pill',
     'button_size' => '1',
     'button_color' => '#1E3A8A',
-    'button_text_color' => '#FFFFFF'
+    'button_text_color' => '#FFFFFF',
+    'button_position' => 'below',
+    'wheel_borders' => '[{"fill":"gradient","c1":"#E8D5A3","c2":"#A68B4B","width":6,"glow":false}]'
 ];
 
 // GET /api/settings - Einstellungen abrufen
@@ -91,10 +94,10 @@ if ($method === 'POST') {
                  'label_color', 'label_scale', 'spin_button_text',
                  'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
                  'segment_gap', 'hub_enabled', 'hub_type', 'hub_shape', 'hub_text',
-                 'hub_text_color', 'hub_size', 'segment_palette', 'background_mode',
+                 'hub_text_color', 'hub_text_layout', 'hub_size', 'segment_palette', 'background_mode',
                  'background_color', 'button_shape', 'button_size', 'button_color',
-                 'button_text_color'];
-    $plainTextKeys = ['winner_email_body'];
+                 'button_text_color', 'button_position'];
+    $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {
             $stmt = $db->prepare("INSERT OR REPLACE INTO settings (customer_id, setting_key, setting_value) VALUES (?, ?, ?)");

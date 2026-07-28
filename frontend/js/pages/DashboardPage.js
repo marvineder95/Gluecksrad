@@ -72,6 +72,21 @@ const DashboardPage = {
 
         const autoRemoveBg = Vue.ref(false);
 
+        const parseBorders = (raw) => {
+            if (Array.isArray(raw)) return raw;
+            try {
+                const arr = JSON.parse(raw || '[]');
+                return Array.isArray(arr) ? arr : [];
+            } catch (e) { return []; }
+        };
+        const addBorder = () => {
+            if (!Array.isArray(formSettings.value.borders)) formSettings.value.borders = [];
+            formSettings.value.borders.push({ fill: 'solid', c1: '#C8A866', c2: '#8A6D3B', width: 5, glow: false });
+        };
+        const removeBorder = (idx) => {
+            formSettings.value.borders.splice(idx, 1);
+        };
+
         const syncFormSettings = () => {
             const sets = settings.value;
             formSettings.value = {
@@ -119,12 +134,15 @@ const DashboardPage = {
                 button_shape: sets.button_shape || CONFIG.DEFAULTS.button_shape,
                 button_size: sets.button_size != null && sets.button_size !== '' ? sets.button_size : CONFIG.DEFAULTS.button_size,
                 button_color: sets.button_color || CONFIG.DEFAULTS.button_color,
-                button_text_color: sets.button_text_color || CONFIG.DEFAULTS.button_text_color
+                button_text_color: sets.button_text_color || CONFIG.DEFAULTS.button_text_color,
+                button_position: sets.button_position || CONFIG.DEFAULTS.button_position,
+                hub_text_layout: sets.hub_text_layout || CONFIG.DEFAULTS.hub_text_layout,
+                borders: parseBorders(sets.wheel_borders != null ? sets.wheel_borders : CONFIG.DEFAULTS.wheel_borders)
             };
             // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
 
-        const loadAll = async () => {
+        const loadAll = async (syncForm = true) => {
             try {
                 const [statsData, segs, sets, leadsData] = await Promise.all([
                     api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.stats),
@@ -136,7 +154,9 @@ const DashboardPage = {
                 segments.value = segs;
                 settings.value = sets;
                 leads.value = leadsData || [];
-                syncFormSettings();
+                // Formular nur beim Erst-/Speicher-Load neu befuellen,
+                // damit z.B. Test-Drehung ungespeicherte Aenderungen nicht verwirft
+                if (syncForm) syncFormSettings();
             } catch (e) {
                 console.error('Fehler beim Laden:', e);
             }
@@ -235,7 +255,7 @@ const DashboardPage = {
                     onComplete: () => {
                         testSpinning.value = false;
                         setTimeout(() => {
-                            loadAll();
+                            loadAll(false);
                         }, CONFIG.ANIMATION.test_spin_refresh_delay_ms);
                     }
                 });
@@ -316,6 +336,7 @@ const DashboardPage = {
             hub_shape: formSettings.value.hub_shape,
             hub_text: formSettings.value.hub_text,
             hub_text_color: formSettings.value.hub_text_color,
+            hub_text_layout: formSettings.value.hub_text_layout,
             hub_size: formSettings.value.hub_size,
             segment_palette: formSettings.value.segment_palette
         }));
@@ -332,7 +353,8 @@ const DashboardPage = {
                 borderRadius: radius,
                 padding: (10 * scale) + 'px ' + (28 * scale) + 'px',
                 fontSize: (0.95 * scale) + 'rem',
-                boxShadow: '0 6px 18px ' + (f.secondary_color || '#000000') + '66'
+                boxShadow: '0 6px 18px ' + (f.secondary_color || '#000000') + '66',
+                order: f.button_position === 'above' ? -1 : 5
             };
         });
 
@@ -434,7 +456,7 @@ const DashboardPage = {
                 addToast(editingSegment.value ? 'Segment aktualisiert' : 'Segment erstellt');
                 showSegmentModal.value = false;
                 segmentImageFile.value = null;
-                loadAll();
+                loadAll(false);
             } catch (e) {
                 const msg = e.message?.includes('HTTP') ? e.message.split(':').pop().trim() : 'Fehler beim Speichern';
                 addToast(msg, 'error');
@@ -446,7 +468,7 @@ const DashboardPage = {
             try {
                 await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments + '?id=' + id);
                 addToast('Segment gelöscht');
-                loadAll();
+                loadAll(false);
             } catch (e) {
                 addToast('Fehler beim Löschen', 'error');
             }
@@ -506,10 +528,10 @@ const DashboardPage = {
             try {
                 await api.put(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments, { orders });
                 addToast('Reihenfolge aktualisiert');
-                loadAll();
+                loadAll(false);
             } catch (e) {
                 addToast('Fehler beim Sortieren', 'error');
-                loadAll();
+                loadAll(false);
             }
         };
 
@@ -575,6 +597,9 @@ const DashboardPage = {
                 formData.append('button_size', formSettings.value.button_size);
                 formData.append('button_color', formSettings.value.button_color);
                 formData.append('button_text_color', formSettings.value.button_text_color);
+                formData.append('button_position', formSettings.value.button_position);
+                formData.append('hub_text_layout', formSettings.value.hub_text_layout);
+                formData.append('wheel_borders', JSON.stringify(formSettings.value.borders || []));
                 if (logoFile.value) formData.append('logo', logoFile.value);
                 if (bgFile.value) formData.append('background_image', bgFile.value);
 
@@ -597,7 +622,7 @@ const DashboardPage = {
             try {
                 await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads + '?id=' + id);
                 addToast('Lead gelöscht');
-                loadAll();
+                loadAll(false);
             } catch (e) {
                 addToast('Fehler beim Löschen', 'error');
             }
@@ -751,6 +776,8 @@ const DashboardPage = {
             previewBrandStyle,
             previewSkin,
             previewButtonStyle,
+            addBorder,
+            removeBorder,
             activeTab,
             segmentImageFile,
             segmentImageOffsetX,
