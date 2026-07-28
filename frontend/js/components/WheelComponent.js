@@ -13,7 +13,8 @@ const WheelComponent = {
             pointer_enabled: '1', pointer_color: '#C8A866', pointer_style: 'triangle',
             rim_glow: '0', segment_gap: 0, segment_palette: '',
             hub_enabled: '1', hub_type: 'shape', hub_shape: 'circle',
-            hub_text: '', hub_text_color: '#FFFFFF', hub_size: 0.16, hub_content_scale: 1
+            hub_text: '', hub_text_color: '#FFFFFF', hub_size: 0.16, hub_content_scale: 1,
+            hub_logo_bg: '#FFFFFF'
         };
         const sk = Vue.computed(() => Object.assign({}, DEFAULT_SKIN, props.skin || {}));
         const gapDeg = Vue.computed(() => {
@@ -47,16 +48,28 @@ const WheelComponent = {
             const frac = isNaN(s) ? 0.16 : Math.max(0.08, Math.min(0.45, s));
             return radiusValue.value * frac;
         });
-        // Bogen für Mittel-Text: großer Bogen (240°) zentriert oben, damit
-        // längerer Text nicht abgeschnitten wird
+        // Bogen für Mittel-Text: oberer Halbkreis (max. 180° = 50% des Rades).
+        // Über 180° kippen die Buchstaben an den Seiten und sehen unschön aus.
         const hubArcPath = Vue.computed(() => {
             const c = centerValue.value, r = hubR.value * 0.74;
-            const spanHalf = 120;
+            const spanHalf = 90; // 2*90 = 180°
             const sa = (-90 - spanHalf) * Math.PI / 180;
             const ea = (-90 + spanHalf) * Math.PI / 180;
             const x1 = (c + r * Math.cos(sa)).toFixed(1), y1 = (c + r * Math.sin(sa)).toFixed(1);
             const x2 = (c + r * Math.cos(ea)).toFixed(1), y2 = (c + r * Math.sin(ea)).toFixed(1);
-            return `M ${x1} ${y1} A ${r.toFixed(1)} ${r.toFixed(1)} 0 1 1 ${x2} ${y2}`;
+            return `M ${x1} ${y1} A ${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${x2} ${y2}`;
+        });
+        // Gespiegelter Bogen: unterer Halbkreis, Text bleibt lesbar (Reflexion).
+        const hubArcBottomPath = Vue.computed(() => {
+            const c = centerValue.value, r = hubR.value * 0.74;
+            const spanHalf = 90;
+            // Bottom-Mittelpunkt liegt bei 90°. Start links (180°), Ende rechts (0°),
+            // der Bogen verläuft unten durch. Sweep 0 hält die Schrift aufrecht.
+            const sa = (90 + spanHalf) * Math.PI / 180; // links unten (180°)
+            const ea = (90 - spanHalf) * Math.PI / 180; // rechts unten (0°)
+            const x1 = (c + r * Math.cos(sa)).toFixed(1), y1 = (c + r * Math.sin(sa)).toFixed(1);
+            const x2 = (c + r * Math.cos(ea)).toFixed(1), y2 = (c + r * Math.sin(ea)).toFixed(1);
+            return `M ${x1} ${y1} A ${r.toFixed(1)} ${r.toFixed(1)} 0 0 0 ${x2} ${y2}`;
         });
         const labelShadow = Vue.computed(() => {
             if (sk.value.label_shadow === '0') return 'none';
@@ -352,6 +365,7 @@ const WheelComponent = {
             hubDiamond,
             hubStar,
             hubArcPath,
+            hubArcBottomPath,
             labelShadow,
             borderRings,
             config: CONFIG

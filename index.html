@@ -166,20 +166,27 @@
                     <polygon v-else-if="sk.hub_shape === 'star'" :points="hubStar" :fill="sk.hub_text_color"/>
                 </g>
                 <!-- TEXT im Mittelpunkt: gerade -->
-                <text v-else-if="sk.hub_type === 'text' && sk.hub_text_layout !== 'arch'" :x="center" :y="center" text-anchor="middle"
+                <text v-else-if="sk.hub_type === 'text' && sk.hub_text_layout !== 'arch' && sk.hub_text_layout !== 'arch-bottom'" :x="center" :y="center" text-anchor="middle"
                       dominant-baseline="central" :fill="sk.hub_text_color"
                       :font-size="hubR * 0.5 * (sk.hub_content_scale || 1)" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">{{ sk.hub_text }}</text>
-                <!-- TEXT im Mittelpunkt: gebogen (arch) -->
+                <!-- TEXT im Mittelpunkt: gebogen oben (arch) -->
                 <g v-else-if="sk.hub_type === 'text' && sk.hub_text_layout === 'arch'">
                     <path :id="'hubArc'" :d="hubArcPath" fill="none"/>
                     <text :fill="sk.hub_text_color" :font-size="hubR * 0.34 * (sk.hub_content_scale || 1)" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">
                         <textPath :href="'#hubArc'" startOffset="50%" text-anchor="middle">{{ sk.hub_text }}</textPath>
                     </text>
                 </g>
+                <!-- TEXT im Mittelpunkt: gebogen unten, gespiegelt (arch-bottom) -->
+                <g v-else-if="sk.hub_type === 'text' && sk.hub_text_layout === 'arch-bottom'">
+                    <path :id="'hubArcBottom'" :d="hubArcBottomPath" fill="none"/>
+                    <text :fill="sk.hub_text_color" :font-size="hubR * 0.34 * (sk.hub_content_scale || 1)" :font-family="(sk.hub_font || font || 'Montserrat') + ', sans-serif'" font-weight="700">
+                        <textPath :href="'#hubArcBottom'" startOffset="50%" text-anchor="middle">{{ sk.hub_text }}</textPath>
+                    </text>
+                </g>
                 <!-- LOGO im Mittelpunkt -->
                 <g v-else-if="sk.hub_type === 'logo' && logo">
                     <clipPath :id="'hubClip'"><circle :cx="center" :cy="center" :r="hubR"/></clipPath>
-                    <circle :cx="center" :cy="center" :r="hubR" fill="#FFFFFF"/>
+                    <circle v-if="sk.hub_logo_bg && sk.hub_logo_bg !== 'transparent'" :cx="center" :cy="center" :r="hubR" :fill="sk.hub_logo_bg"/>
                     <image :href="logo" :x="center - hubR * (sk.hub_content_scale || 1)" :y="center - hubR * (sk.hub_content_scale || 1)" :width="hubR * 2 * (sk.hub_content_scale || 1)" :height="hubR * 2 * (sk.hub_content_scale || 1)"
                            preserveAspectRatio="xMidYMid meet" :clip-path="'url(#hubClip)'"/>
                 </g>
@@ -1431,7 +1438,8 @@
                                     <label>Text-Ausrichtung</label>
                                     <select class="admin-select" v-model="formSettings.hub_text_layout">
                                         <option value="straight">Gerade</option>
-                                        <option value="arch">Gebogen (Bogen)</option>
+                                        <option value="arch">Gebogen (oben)</option>
+                                        <option value="arch-bottom">Gebogen (unten, gespiegelt)</option>
                                     </select>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'text'">
@@ -1455,6 +1463,18 @@
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1' && (formSettings.hub_type === 'text' || formSettings.hub_type === 'shape')">
                                     <label>Symbol-/Textfarbe</label>
                                     <color-picker v-model="formSettings.hub_text_color"></color-picker>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'logo'">
+                                    <label>Logo-Hintergrund transparent</label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" :checked="formSettings.hub_logo_bg === 'transparent'"
+                                               @change="formSettings.hub_logo_bg = $event.target.checked ? 'transparent' : '#FFFFFF'">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                <div class="branding-item" v-if="formSettings.hub_enabled === '1' && formSettings.hub_type === 'logo' && formSettings.hub_logo_bg !== 'transparent'">
+                                    <label>Logo-Hintergrundfarbe</label>
+                                    <color-picker v-model="formSettings.hub_logo_bg"></color-picker>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.hub_enabled === '1'">
                                     <label>Element-Größe ({{ Math.round(formSettings.hub_size * 100) }}%)</label>

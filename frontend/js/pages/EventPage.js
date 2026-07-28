@@ -335,7 +335,7 @@ const EventPage = {
                 rim_glow: s.rim_glow, segment_gap: s.segment_gap, segment_palette: s.segment_palette,
                 hub_enabled: s.hub_enabled, hub_type: s.hub_type, hub_shape: s.hub_shape,
                 hub_text: s.hub_text, hub_text_color: s.hub_text_color, hub_size: s.hub_size,
-                hub_text_layout: s.hub_text_layout
+                hub_text_layout: s.hub_text_layout, hub_logo_bg: s.hub_logo_bg
             };
         });
         // Angezeigte Segmente: erschöpfte je nach depleted_behavior ausblenden/ausgrauen

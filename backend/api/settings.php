@@ -52,6 +52,7 @@ $DEFAULTS = [
     'hub_shape' => 'circle',
     'hub_text' => '',
     'hub_text_color' => '#FFFFFF',
+    'hub_logo_bg' => '#FFFFFF',
     'hub_text_layout' => 'straight',
     'hub_size' => '0.16',
     'segment_palette' => '',
@@ -110,7 +111,7 @@ if ($method === 'POST') {
                  'hub_content_scale', 'spin_button_text', 'spin_trigger',
                  'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
                  'segment_gap', 'hub_enabled', 'hub_type', 'hub_shape', 'hub_text',
-                 'hub_text_color', 'hub_text_layout', 'hub_size', 'segment_palette', 'background_mode',
+                 'hub_text_color', 'hub_logo_bg', 'hub_text_layout', 'hub_size', 'segment_palette', 'background_mode',
                  'background_color', 'button_shape', 'button_size', 'button_color',
                  'button_text_color', 'button_position'];
     $plainTextKeys = ['winner_email_body', 'wheel_borders', 'hub_text', 'saved_preset', 'lead_fields'];

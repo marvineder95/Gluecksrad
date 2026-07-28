@@ -70,6 +70,7 @@ const CONFIG = {
         hub_text_layout: 'straight',  // straight | arch (gebogen)
         hub_size: 0.16,               // Anteil des Radius (0.08-0.45)
         hub_content_scale: 1,         // Größe von Logo/Text INNERHALB des Hubs (0.4-1.6)
+        hub_logo_bg: '#FFFFFF',       // Hintergrund hinter dem Logo im Mittelelement ('transparent' = keiner)
         segment_palette: '',          // intern (UI entfernt)
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
         background_color: '#0F172A',

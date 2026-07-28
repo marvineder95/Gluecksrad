@@ -153,6 +153,7 @@ const DashboardPage = {
                 hub_shape: sets.hub_shape || CONFIG.DEFAULTS.hub_shape,
                 hub_text: sets.hub_text != null ? sets.hub_text : CONFIG.DEFAULTS.hub_text,
                 hub_text_color: sets.hub_text_color || CONFIG.DEFAULTS.hub_text_color,
+                hub_logo_bg: sets.hub_logo_bg || CONFIG.DEFAULTS.hub_logo_bg,
                 hub_text_layout: sets.hub_text_layout || CONFIG.DEFAULTS.hub_text_layout,
                 hub_size: sets.hub_size != null && sets.hub_size !== '' ? sets.hub_size : CONFIG.DEFAULTS.hub_size,
                 hub_content_scale: sets.hub_content_scale != null && sets.hub_content_scale !== '' ? sets.hub_content_scale : CONFIG.DEFAULTS.hub_content_scale,
@@ -387,6 +388,7 @@ const DashboardPage = {
             hub_shape: formSettings.value.hub_shape,
             hub_text: formSettings.value.hub_text,
             hub_text_color: formSettings.value.hub_text_color,
+            hub_logo_bg: formSettings.value.hub_logo_bg,
             hub_text_layout: formSettings.value.hub_text_layout,
             hub_size: formSettings.value.hub_size,
             segment_palette: formSettings.value.segment_palette
@@ -664,6 +666,7 @@ const DashboardPage = {
                 formData.append('hub_shape', formSettings.value.hub_shape);
                 formData.append('hub_text', formSettings.value.hub_text || '');
                 formData.append('hub_text_color', formSettings.value.hub_text_color);
+                formData.append('hub_logo_bg', formSettings.value.hub_logo_bg || 'transparent');
                 formData.append('hub_size', formSettings.value.hub_size);
                 formData.append('hub_content_scale', formSettings.value.hub_content_scale);
                 formData.append('segment_palette', formSettings.value.segment_palette || '');
