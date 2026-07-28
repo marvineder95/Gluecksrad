@@ -113,7 +113,11 @@ const DashboardPage = {
                 hub_size: sets.hub_size != null && sets.hub_size !== '' ? sets.hub_size : CONFIG.DEFAULTS.hub_size,
                 segment_palette: sets.segment_palette != null ? sets.segment_palette : CONFIG.DEFAULTS.segment_palette,
                 background_mode: sets.background_mode || CONFIG.DEFAULTS.background_mode,
-                background_color: sets.background_color || CONFIG.DEFAULTS.background_color
+                background_color: sets.background_color || CONFIG.DEFAULTS.background_color,
+                button_shape: sets.button_shape || CONFIG.DEFAULTS.button_shape,
+                button_size: sets.button_size != null && sets.button_size !== '' ? sets.button_size : CONFIG.DEFAULTS.button_size,
+                button_color: sets.button_color || CONFIG.DEFAULTS.button_color,
+                button_text_color: sets.button_text_color || CONFIG.DEFAULTS.button_text_color
             };
             // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
@@ -311,6 +315,22 @@ const DashboardPage = {
             hub_size: formSettings.value.hub_size,
             segment_palette: formSettings.value.segment_palette
         }));
+
+        // Stil des Spin-Buttons in der Vorschau
+        const previewButtonStyle = Vue.computed(() => {
+            const f = formSettings.value;
+            const scale = parseFloat(f.button_size) || 1;
+            const radius = f.button_shape === 'square' ? '6px' : f.button_shape === 'rounded' ? '14px' : '999px';
+            return {
+                background: f.button_color || '#1E3A8A',
+                color: f.button_text_color || '#FFFFFF',
+                fontFamily: f.font_family || 'Montserrat',
+                borderRadius: radius,
+                padding: (10 * scale) + 'px ' + (28 * scale) + 'px',
+                fontSize: (0.95 * scale) + 'rem',
+                boxShadow: '0 6px 18px ' + (f.secondary_color || '#000000') + '66'
+            };
+        });
 
         // Segment modal
         const openSegmentModal = (segment) => {
@@ -545,6 +565,10 @@ const DashboardPage = {
                 formData.append('segment_palette', formSettings.value.segment_palette || '');
                 formData.append('background_mode', formSettings.value.background_mode);
                 formData.append('background_color', formSettings.value.background_color);
+                formData.append('button_shape', formSettings.value.button_shape);
+                formData.append('button_size', formSettings.value.button_size);
+                formData.append('button_color', formSettings.value.button_color);
+                formData.append('button_text_color', formSettings.value.button_text_color);
                 if (logoFile.value) formData.append('logo', logoFile.value);
                 if (bgFile.value) formData.append('background_image', bgFile.value);
 
@@ -720,6 +744,7 @@ const DashboardPage = {
             getThemeName,
             previewBrandStyle,
             previewSkin,
+            previewButtonStyle,
             activeTab,
             segmentImageFile,
             segmentImageOffsetX,

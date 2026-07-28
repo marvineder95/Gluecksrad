@@ -45,7 +45,11 @@ $DEFAULTS = [
     'hub_size' => '0.16',
     'segment_palette' => '',
     'background_mode' => 'theme',
-    'background_color' => '#0F172A'
+    'background_color' => '#0F172A',
+    'button_shape' => 'pill',
+    'button_size' => '1',
+    'button_color' => '#1E3A8A',
+    'button_text_color' => '#FFFFFF'
 ];
 
 // GET /api/settings - Einstellungen abrufen
@@ -85,7 +89,8 @@ if ($method === 'POST') {
                  'pointer_enabled', 'pointer_color', 'pointer_style', 'rim_glow',
                  'segment_gap', 'hub_enabled', 'hub_type', 'hub_shape', 'hub_text',
                  'hub_text_color', 'hub_size', 'segment_palette', 'background_mode',
-                 'background_color'];
+                 'background_color', 'button_shape', 'button_size', 'button_color',
+                 'button_text_color'];
     $plainTextKeys = ['winner_email_body'];
     foreach ($textKeys as $key) {
         if (isset($data[$key])) {

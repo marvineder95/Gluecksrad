@@ -224,8 +224,15 @@ const EventPage = {
         const wheelAccent = Vue.computed(() => settings.value.accent_color || '');
         const buttonStyle = Vue.computed(() => {
             const s = settings.value || {};
-            const style = { fontFamily: s.font_family || 'Montserrat' };
-            if (s.primary_color) style.background = s.primary_color;
+            const scale = parseFloat(s.button_size) || 1;
+            const radius = s.button_shape === 'square' ? '8px' : s.button_shape === 'rounded' ? '18px' : '999px';
+            const style = {
+                fontFamily: s.font_family || 'Montserrat',
+                borderRadius: radius,
+                transform: 'scale(' + scale + ')'
+            };
+            if (s.button_color) style.background = s.button_color;
+            if (s.button_text_color) style.color = s.button_text_color;
             return style;
         });
         const buttonText = Vue.computed(() => settings.value.spin_button_text || 'DREHEN');

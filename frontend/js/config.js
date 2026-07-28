@@ -56,7 +56,12 @@ const CONFIG = {
         hub_size: 0.16,               // Anteil des Radius (0.08-0.45)
         segment_palette: '',          // intern (UI entfernt)
         background_mode: 'theme',     // 'theme' = Hintergrundbild | 'solid' = Farbe
-        background_color: '#0F172A'
+        background_color: '#0F172A',
+        // Spin-Button
+        button_shape: 'pill',         // pill | rounded | square
+        button_size: 1,               // 0.8-1.4
+        button_color: '#1E3A8A',
+        button_text_color: '#FFFFFF'
     },
     ANIMATION: {
         confetti_particle_count: 200,
