@@ -43,6 +43,10 @@ const EventPage = {
                 settings.value = sets;
                 campaignEnded.value = statsData.remaining_spins <= 0 || statsData.campaign_status === 'ended';
                 leadCaptureEnabled.value = sets.lead_capture_enabled === '1' || sets.lead_capture_enabled === 1 || sets.lead_capture_enabled === true;
+                // Lead-Formular proaktiv anzeigen (vor dem Drehen)
+                if (leadCaptureEnabled.value && !currentLeadId.value && !leadSkipped.value && !campaignEnded.value) {
+                    showLeadForm.value = true;
+                }
             } catch (e) {
                 console.error('Fehler beim Laden:', e);
             }
@@ -204,7 +208,8 @@ const EventPage = {
                 leadSkipped.value = false;
                 leadForm.value = { name: '', email: '' };
                 consentGiven.value = false;
-                showLeadForm.value = false;
+                // Formular für den nächsten Spieler direkt wieder anzeigen
+                showLeadForm.value = true;
             }
         };
 
