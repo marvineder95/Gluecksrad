@@ -97,7 +97,7 @@ const CONFIG = {
         text_radius_factor: 0.58,
         font_size_min: 14,
         font_size_factor: 0.042,
-        svg_padding: 30,
+        svg_padding: 46,
         flip_start_deg: 90,
         flip_end_deg: 270,
         flip_offset_deg: 180

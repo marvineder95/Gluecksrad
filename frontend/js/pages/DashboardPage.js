@@ -193,6 +193,7 @@ const DashboardPage = {
         // campaignDate entfernt – Kampagnenstatus-KPI wurde entfernt
 
         const segmentStats = Vue.computed(() => stats.value.segment_stats || []);
+        const hasUnlimited = Vue.computed(() => segmentStats.value.some(s => parseInt(s.unlimited) === 1));
 
         const totalMaxCount = Vue.computed(() => {
             return segmentStats.value.reduce((sum, seg) => sum + (seg.max_count > 0 ? seg.max_count : 0), 0);
@@ -821,6 +822,7 @@ const DashboardPage = {
             totalMaxCount,
             totalUsedCount,
             totalRemaining,
+            hasUnlimited,
             formatNumber,
             formattedSpins,
             formattedLeads,
