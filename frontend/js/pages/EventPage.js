@@ -167,7 +167,9 @@ const EventPage = {
                             // Gewinnbildschirm nach 5 Sekunden automatisch schließen
                             if (winTimer) clearTimeout(winTimer);
                             winTimer = setTimeout(() => {
-                                if (showWin.value) nextRound();
+                                if (showWin.value) {
+                                    (winner.value && parseInt(winner.value.is_respin)) ? respinAgain() : nextRound();
+                                }
                             }, 5000);
                         }, CONFIG.ANIMATION.win_overlay_delay_ms);
                         // Daten neu laden, um remaining spins zu aktualisieren
@@ -179,6 +181,14 @@ const EventPage = {
                 console.error('Spin-Fehler:', e);
                 loadData();
             }
+        };
+
+        // Neu-Dreh: Overlay schliessen und direkt erneut drehen, Lead bleibt erhalten
+        const respinAgain = () => {
+            if (winTimer) { clearTimeout(winTimer); winTimer = null; }
+            showWin.value = false;
+            if (confetti) confetti.stop();
+            spin(true);
         };
 
         const nextRound = () => {
@@ -278,7 +288,7 @@ const EventPage = {
 
         return {
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
-            confettiCanvas, spin, nextRound, bgStyle, handleSecretClick, logoUrl,
+            confettiCanvas, spin, nextRound, respinAgain, bgStyle, handleSecretClick, logoUrl,
             skin, wheelFont, wheelAccent, buttonStyle, buttonText, wheelBorders, displaySegments,
             wheelSize, wheelAreaRef, navigateTo,
             leadCaptureEnabled, showLeadForm, leadForm, leadError,

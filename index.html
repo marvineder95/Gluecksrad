@@ -338,8 +338,15 @@
             <div class="secret-corner" @click="handleSecretClick"></div>
 
             <Transition name="win-fade">
-                <div v-if="showWin" class="win-overlay" @click.self="nextRound">
-                    <div class="win-content">
+                <div v-if="showWin" class="win-overlay" @click.self="winner && parseInt(winner.is_respin) ? respinAgain() : nextRound()">
+                    <!-- Neu-Dreh-Segment: kein Preis, direkt nochmal drehen (Lead bleibt) -->
+                    <div v-if="winner && parseInt(winner.is_respin)" class="win-content">
+                        <div class="win-badge">{{ winner.name }}</div>
+                        <div class="win-text">{{ winner.win_text || 'Du darfst nochmal drehen!' }}</div>
+                        <button class="next-round-btn" @click="respinAgain">Nochmal drehen</button>
+                    </div>
+                    <!-- Normaler Gewinn -->
+                    <div v-else class="win-content">
                         <div class="win-badge">{{ settings.win_badge_text || 'GEWONNEN!' }}</div>
                         <img v-if="winner?.image" :src="winner.image" class="win-image" alt="">
                         <div class="win-name">{{ winner?.name }}</div>
@@ -1982,6 +1989,15 @@
                         <div class="admin-form-group">
                             <label>Gewinntext</label>
                             <textarea class="admin-input" v-model="segmentForm.win_text" rows="2" style="resize: vertical;"></textarea>
+                        </div>
+                        <div class="admin-form-group">
+                            <div class="bg-removal-toggle" style="border:none; padding:0;">
+                                <input type="checkbox" id="respinToggle" :checked="segmentForm.is_respin === '1'" @change="segmentForm.is_respin = $event.target.checked ? '1' : '0'">
+                                <label for="respinToggle" class="bg-removal-label">
+                                    <span class="bg-removal-switch"></span>
+                                    <span class="bg-removal-text">Neu-Dreh-Feld (kein Preis – Spieler dreht sofort nochmal, ohne Daten erneut einzugeben)</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="admin-form-group">
                             <div class="bg-removal-toggle" style="border:none; padding:0;">

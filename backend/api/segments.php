@@ -53,7 +53,7 @@ if ($method === 'GET') {
     if ($customerId === null || $customerId <= 0) {
         jsonResponse([]);
     }
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, unlimited, depleted_behavior, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, sort_order, max_count, unlimited, depleted_behavior, is_respin, image_offset_x, image_offset_y, image_rotation, image_scale, is_active FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
     $rows = $stmt->fetchAll();
 
@@ -88,6 +88,7 @@ if ($method === 'POST') {
     if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) { $color = '#FF6B35'; }
     $unlimited = (!empty($data['unlimited']) && $data['unlimited'] !== '0' && $data['unlimited'] !== 'false') ? 1 : 0;
     $depletedBehavior = ($data['depleted_behavior'] ?? 'hide') === 'grey' ? 'grey' : 'hide';
+    $isRespin = (!empty($data['is_respin']) && $data['is_respin'] !== '0' && $data['is_respin'] !== 'false') ? 1 : 0;
     $imageOffsetX = floatval($data['image_offset_x'] ?? 0);
     $imageOffsetY = floatval($data['image_offset_y'] ?? 0);
     $imageRotation = floatval($data['image_rotation'] ?? 0);
@@ -178,11 +179,11 @@ if ($method === 'POST') {
             $oldMaxCount = $oldSegment ? intval($oldSegment['max_count']) : 0;
 
             if ($imagePath !== null) {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, is_respin = ?, image = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $isRespin, $imagePath, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             } else {
-                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
-                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
+                $stmt = $db->prepare("UPDATE segments SET name = ?, win_text = ?, weight = ?, sort_order = ?, max_count = ?, theme = ?, color = ?, unlimited = ?, depleted_behavior = ?, is_respin = ?, image_offset_x = ?, image_offset_y = ?, image_rotation = ?, image_scale = ? WHERE customer_id = ? AND id = ?");
+                $stmt->execute([$name, $win_text, $weight, $sort_order, $max_count, $theme, $color, $unlimited, $depletedBehavior, $isRespin, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale, $customerId, $id]);
             }
 
             // Pool anpassen, falls sich max_count geändert hat
@@ -190,8 +191,8 @@ if ($method === 'POST') {
                 adjustPoolForSegment($db, $customerId, $id, $max_count);
             }
         } else {
-            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, color, unlimited, depleted_behavior, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $color, $unlimited, $depletedBehavior, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
+            $stmt = $db->prepare("INSERT INTO segments (customer_id, name, win_text, weight, image, theme, color, unlimited, depleted_behavior, is_respin, sort_order, max_count, image_offset_x, image_offset_y, image_rotation, image_scale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$customerId, $name, $win_text, $weight, $imagePath, $theme, $color, $unlimited, $depletedBehavior, $isRespin, $sort_order, $max_count, $imageOffsetX, $imageOffsetY, $imageRotation, $imageScale]);
             $id = $db->lastInsertId();
 
             // Neue Pool-Einträge für das neue Segment

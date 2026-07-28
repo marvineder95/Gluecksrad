@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS segments (
     theme TEXT DEFAULT 'neutral',
     unlimited INTEGER DEFAULT 0,
     depleted_behavior TEXT DEFAULT 'hide',
+    is_respin INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

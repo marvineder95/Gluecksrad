@@ -381,6 +381,7 @@ const DashboardPage = {
                     color: segment.color || CONFIG.DEFAULTS.segment_color,
                     unlimited: (parseInt(segment.unlimited) === 1) ? '1' : '0',
                     depleted_behavior: segment.depleted_behavior === 'grey' ? 'grey' : 'hide',
+                    is_respin: (parseInt(segment.is_respin) === 1) ? '1' : '0',
                     image: segment.image || '',
                     removeBg: false
                 };
@@ -394,7 +395,7 @@ const DashboardPage = {
                     name: '', win_text: '', weight: 100,
                     sort_order: segments.value.length, max_count: 1,
                     theme: 'neutral', color: CONFIG.DEFAULTS.segment_color,
-                    unlimited: '0', depleted_behavior: 'hide',
+                    unlimited: '0', depleted_behavior: 'hide', is_respin: '0',
                     image: '', removeBg: autoRemoveBg.value
                 };
                 segmentImageOffsetX.value = 0;
@@ -452,6 +453,7 @@ const DashboardPage = {
                 formData.append('color', segmentForm.value.color || CONFIG.DEFAULTS.segment_color);
                 formData.append('unlimited', segmentForm.value.unlimited === '1' ? '1' : '0');
                 formData.append('depleted_behavior', segmentForm.value.depleted_behavior || 'hide');
+                formData.append('is_respin', segmentForm.value.is_respin === '1' ? '1' : '0');
                 formData.append('remove_bg', segmentForm.value.removeBg ? '1' : '0');
                 formData.append('image_offset_x', String(segmentImageOffsetX.value || 0));
                 formData.append('image_offset_y', String(segmentImageOffsetY.value || 0));

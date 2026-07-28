@@ -63,7 +63,7 @@ if ($method === 'POST') {
     }
 
     // Alle aktiven Segmente + verbleibende Pool-Anzahl laden
-    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, unlimited, depleted_behavior FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
+    $stmt = $db->prepare("SELECT id, name, color, win_text, weight, image, theme, unlimited, depleted_behavior, is_respin FROM segments WHERE customer_id = ? AND is_active = 1 ORDER BY sort_order, id");
     $stmt->execute([$customerId]);
     $allSegments = $stmt->fetchAll();
 
@@ -143,8 +143,9 @@ if ($method === 'POST') {
             $stmt->execute([$spinId, $customerId, $poolEntry['id']]);
         }
 
-        // Lead mit Spin und Gewinn verknüpfen
-        if ($leadId) {
+        // Lead mit Spin und Gewinn verknüpfen – NICHT bei Neu-Dreh-Segmenten,
+        // damit der Lead für den nächsten (echten) Dreh erhalten bleibt.
+        if ($leadId && empty($winner['is_respin'])) {
             $stmt = $db->prepare("UPDATE leads SET spin_id = ?, prize = ? WHERE id = ?");
             $stmt->execute([$spinId, $winner['name'], $leadId]);
 
