@@ -41,7 +41,7 @@ if ($method === 'GET') {
     requireSuperAdmin();
     $stmt = $db->query("
         SELECT 
-            c.id, c.company_name, c.contact_name, c.email, c.logo, c.is_active, c.subdomain, c.created_at,
+            c.id, c.company_name, c.contact_name, c.email, c.logo, c.is_active, c.subdomain, c.export_enabled, c.created_at,
             (SELECT COUNT(*) FROM users u WHERE u.customer_id = c.id) AS user_count,
             (SELECT COUNT(*) FROM spins s WHERE s.customer_id = c.id) AS spin_count
         FROM customers c
@@ -151,6 +151,7 @@ if ($method === 'PUT') {
     if (isset($data['email'])) { $updates[] = 'email = ?'; $params[] = $email; }
     if (isset($data['subdomain'])) { $updates[] = 'subdomain = ?'; $params[] = $subdomain; }
     if ($isActive !== null) { $updates[] = 'is_active = ?'; $params[] = $isActive; }
+    if (isset($data['export_enabled'])) { $updates[] = 'export_enabled = ?'; $params[] = intval($data['export_enabled']); }
 
     if (empty($updates)) {
         jsonResponse(['error' => 'Keine Felder zum Aktualisieren'], 400);

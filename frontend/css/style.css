@@ -1272,6 +1272,24 @@ html {
     pointer-events: none;
 }
 
+.stats-export-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+}
+.stats-export-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #475569;
+    margin-right: 4px;
+}
+
 .preview-stage-hint {
     margin-top: 14px;
     padding: 8px 20px;

@@ -767,6 +767,43 @@ const DashboardPage = {
             addToast('CSV exportiert');
         };
 
+        // Export-Freischaltung (kostenpflichtiges Feature, vom Super-Admin aktiviert)
+        const exportEnabled = Vue.computed(() =>
+            settings.value && (settings.value.export_enabled === '1' || settings.value.export_enabled === 1)
+        );
+
+        // Datei über authentifizierten Request herunterladen (xlsx/pdf via Backend)
+        const downloadExport = async (type, format) => {
+            try {
+                const res = await fetch(CONFIG.API_BASE + CONFIG.ENDPOINTS.export + '?type=' + type + '&format=' + format, {
+                    headers: getAuthHeaders()
+                });
+                if (!res.ok) {
+                    let msg = 'Export fehlgeschlagen';
+                    try { const j = await res.json(); if (j.error) msg = j.error; } catch (e) {}
+                    addToast(msg, 'error');
+                    return;
+                }
+                const blob = await res.blob();
+                const cd = res.headers.get('Content-Disposition') || '';
+                const m = cd.match(/filename="?([^"]+)"?/);
+                const filename = m ? m[1] : (type + '.' + format);
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                addToast((format === 'xlsx' ? 'Excel' : 'PDF') + ' exportiert');
+            } catch (e) {
+                addToast('Export fehlgeschlagen', 'error');
+            }
+        };
+        const exportLeads = (format) => downloadExport('leads', format);
+        const exportStats = (format) => downloadExport('stats', format);
+
         const openPasswordModal = () => {
             passwordForm.value = { current: '', new: '', confirm: '' };
             passwordError.value = '';
@@ -920,7 +957,10 @@ const DashboardPage = {
             draggedIndex,
             dragOverIndex,
             deleteLead,
-            exportLeadsCSV
+            exportLeadsCSV,
+            exportEnabled,
+            exportLeads,
+            exportStats
         };
     },
     template: '#dashboard-template'

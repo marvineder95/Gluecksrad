@@ -11,7 +11,8 @@ const CONFIG = {
         stats: '/stats.php',
         admin_stats: '/admin_stats.php',
         auth: '/auth.php',
-        themes: '/themes.php'
+        themes: '/themes.php',
+        export: '/export.php'
     },
     DEFAULTS: {
         total_spins_limit: 1000,

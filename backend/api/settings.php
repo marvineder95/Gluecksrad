@@ -80,6 +80,11 @@ if ($method === 'GET') {
     foreach ($stmt->fetchAll() as $row) {
         $settings[$row['setting_key']] = $row['setting_value'];
     }
+    // Freischalt-Flag für den Export (nur vom Super-Admin änderbar) mitliefern
+    $stmt = $db->prepare("SELECT export_enabled FROM customers WHERE id = ?");
+    $stmt->execute([$customerId]);
+    $cust = $stmt->fetch();
+    $settings['export_enabled'] = ($cust && intval($cust['export_enabled'])) ? '1' : '0';
     jsonResponse($settings);
 }
 

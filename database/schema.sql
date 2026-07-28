@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS customers (
     logo TEXT,
     is_active INTEGER DEFAULT 1,
     subdomain TEXT UNIQUE,
+    export_enabled INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
