@@ -1,0 +1,21 @@
+# Lokale Entwicklungs-Datenbank (nur DEV). Produktion: nativer Postgres auf dem Server.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: gluecksrad_pg
+    environment:
+      POSTGRES_USER: gluecksrad
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: gluecksrad
+    ports:
+      - "5433:5432"   # 5433 auf dem Host, um Konflikte mit lokalem Postgres zu vermeiden
+    volumes:
+      - gluecksrad_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gluecksrad"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  gluecksrad_pgdata:
