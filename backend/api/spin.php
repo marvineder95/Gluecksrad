@@ -195,19 +195,21 @@ if ($method === 'POST') {
                     ];
                     $subject = strtr($emailSettings['winner_email_subject'], $replacements);
                     $body = strtr($emailSettings['winner_email_body'], $replacements);
-                    $headers = 'From: ' . $emailSettings['winner_email_sender'] . "\r\n" .
-                               'Reply-To: ' . $emailSettings['winner_email_sender'] . "\r\n" .
-                               'Content-Type: text/plain; charset=UTF-8' . "\r\n" .
-                               'X-Mailer: PHP/' . phpversion();
-                    $mailSent = @mail($lead['email'], $subject, $body, $headers);
 
-                    // Lokales Logging für Tests (wenn mail() nicht konfiguriert ist)
+                    // Versand über den konfigurierten Treiber (Resend/SMTP/mail)
+                    require_once __DIR__ . '/../utils/mailer.php';
+                    $mailResult = sendWinnerEmail($lead['email'], $lead['name'], $subject, $body);
+                    $mailSent = !empty($mailResult['success']);
+
+                    // Lokales Logging (hilft beim Debuggen der Zustellung)
                     $logDir = __DIR__ . '/../logs';
                     if (!is_dir($logDir)) {
                         @mkdir($logDir, 0755, true);
                     }
                     $logFile = $logDir . '/mail.log';
-                    $logEntry = date('Y-m-d H:i:s') . " | To: " . $lead['email'] . " | Subject: " . $subject . " | Sent: " . ($mailSent ? 'YES' : 'NO') . "\n";
+                    $logEntry = date('Y-m-d H:i:s') . " | To: " . $lead['email'] . " | Subject: " . $subject
+                        . " | Sent: " . ($mailSent ? 'YES' : 'NO')
+                        . ($mailSent ? '' : ' | Error: ' . ($mailResult['error'] ?? '?')) . "\n";
                     $logEntry .= "Body:\n" . $body . "\n" . str_repeat('-', 60) . "\n";
                     @file_put_contents($logFile, $logEntry, FILE_APPEND | LOCK_EX);
                 }

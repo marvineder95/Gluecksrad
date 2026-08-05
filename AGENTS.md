@@ -287,6 +287,13 @@ Aktuell ist die Funktion im Hosting-Betrieb deaktiviert; die UI zeigt entspreche
 
 ## 8. Deployment
 
+> **Ausführlicher Runbook (Server + Domain + Mail):** siehe `DEPLOYMENT.md`
+> (Nginx- und Apache-Konfig, HTTPS, Resend-Mailsetup, Smoke-Test).
+
+**E-Mail-Versand** läuft über einen Treiber in `backend/config/email.secret.php`
+(`driver` = `resend` | `smtp` | `mail`). `resend` = HTTP-API (empfohlen, kein SMTP nötig).
+Betrifft Kunden-Zugangsdaten **und** Gewinn-Mails (`sendMail()` in `backend/utils/mailer.php`).
+
 1. Projekt auf einen PHP-fähigen Webserver (Apache empfohlen wegen `.htaccess`) kopieren.
 2. `database/`- und `backend/uploads/`-Verzeichnisse müssen für PHP beschreibbar sein.
 3. `php backend/setup.php` ausführen, um die Datenbank zu initialisieren.

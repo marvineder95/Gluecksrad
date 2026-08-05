@@ -10,15 +10,74 @@ function getEmailConfig() {
     return require __DIR__ . '/../config/email.php';
 }
 
-function sendCustomerCredentials($toEmail, $toName, $loginEmail, $plainPassword) {
+/**
+ * Zentraler Versand. Wählt anhand von config['driver'] den Transportweg.
+ * $text ist optional (Plain-Text-Alternative). Rückgabe:
+ *   ['success' => bool, 'error' => string|null]
+ */
+function sendMail($toEmail, $toName, $subject, $html, $text = '') {
     $config = getEmailConfig();
+    $driver = $config['driver'] ?? 'smtp';
 
+    if ($driver === 'resend') {
+        return sendViaResend($config, $toEmail, $toName, $subject, $html, $text);
+    }
+    if ($driver === 'mail') {
+        return sendViaPhpMail($config, $toEmail, $subject, $html, $text);
+    }
+    return sendViaSmtp($config, $toEmail, $toName, $subject, $html, $text);
+}
+
+/** Versand über die Resend HTTP-API (https://resend.com). */
+function sendViaResend($config, $toEmail, $toName, $subject, $html, $text) {
+    if (empty($config['resend_api_key'])) {
+        return ['success' => false, 'error' => 'Resend API-Key fehlt (email.secret.php)'];
+    }
+    $fromName = $config['from_name'] ?: 'Point4 Spin';
+    $from = $fromName . ' <' . $config['from_email'] . '>';
+
+    $payload = [
+        'from' => $from,
+        'to' => [$toEmail],
+        'subject' => $subject,
+        'html' => $html,
+    ];
+    if (!empty($text)) { $payload['text'] = $text; }
+    if (!empty($config['reply_to_email'])) { $payload['reply_to'] = $config['reply_to_email']; }
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $config['resend_api_key'],
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+
+    if ($response === false) {
+        return ['success' => false, 'error' => 'Resend-Verbindung fehlgeschlagen: ' . $curlErr];
+    }
+    if ($httpCode >= 200 && $httpCode < 300) {
+        return ['success' => true];
+    }
+    $body = json_decode($response, true);
+    $msg = is_array($body) && isset($body['message']) ? $body['message'] : $response;
+    return ['success' => false, 'error' => 'Resend-Fehler (' . $httpCode . '): ' . $msg];
+}
+
+/** Versand über SMTP (PHPMailer). */
+function sendViaSmtp($config, $toEmail, $toName, $subject, $html, $text) {
     $mail = new PHPMailer(true);
     $mail->CharSet = 'UTF-8';
     $mail->Encoding = 'base64';
 
     try {
-        // Server settings
         $mail->isSMTP();
         $mail->Host = $config['smtp_host'];
         $mail->SMTPAuth = $config['smtp_auth'];
@@ -28,20 +87,16 @@ function sendCustomerCredentials($toEmail, $toName, $loginEmail, $plainPassword)
         $mail->Port = $config['smtp_port'];
         $mail->SMTPDebug = $config['debug'];
 
-        // Absender
         $mail->setFrom($config['from_email'], $config['from_name']);
         if (!empty($config['reply_to_email'])) {
             $mail->addReplyTo($config['reply_to_email'], $config['reply_to_name']);
         }
-
-        // Empfänger
         $mail->addAddress($toEmail, $toName);
 
-        // Inhalt
         $mail->isHTML(true);
-        $mail->Subject = 'Ihre Zugangsdaten für Point4 Spin';
-        $mail->Body = buildCredentialsEmailHtml($toName, $loginEmail, $plainPassword);
-        $mail->AltBody = buildCredentialsEmailText($toName, $loginEmail, $plainPassword);
+        $mail->Subject = $subject;
+        $mail->Body = $html;
+        if (!empty($text)) { $mail->AltBody = $text; }
 
         $mail->send();
         return ['success' => true];
@@ -50,6 +105,37 @@ function sendCustomerCredentials($toEmail, $toName, $loginEmail, $plainPassword)
     } catch (Exception $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
+}
+
+/** Notlösung: PHP mail() (schlechte Zustellbarkeit, kein Auth). */
+function sendViaPhpMail($config, $toEmail, $subject, $html, $text) {
+    $from = $config['from_email'];
+    $headers = 'From: ' . $config['from_name'] . ' <' . $from . '>' . "\r\n"
+        . (!empty($config['reply_to_email']) ? 'Reply-To: ' . $config['reply_to_email'] . "\r\n" : '')
+        . 'MIME-Version: 1.0' . "\r\n"
+        . 'Content-Type: text/html; charset=UTF-8' . "\r\n";
+    $ok = @mail($toEmail, $subject, $html, $headers);
+    return $ok ? ['success' => true] : ['success' => false, 'error' => 'PHP mail() fehlgeschlagen'];
+}
+
+function sendCustomerCredentials($toEmail, $toName, $loginEmail, $plainPassword) {
+    return sendMail(
+        $toEmail,
+        $toName,
+        'Ihre Zugangsdaten für Point4 Spin',
+        buildCredentialsEmailHtml($toName, $loginEmail, $plainPassword),
+        buildCredentialsEmailText($toName, $loginEmail, $plainPassword)
+    );
+}
+
+/**
+ * Gewinn-Mail an einen Lead. $subject/$body sind bereits fertig ersetzte Texte.
+ * $body ist Plain-Text; wir schicken ihn als einfache HTML- und Text-Variante.
+ */
+function sendWinnerEmail($toEmail, $toName, $subject, $body) {
+    $html = '<div style="font-family:Montserrat,Arial,sans-serif; font-size:15px; line-height:1.6; color:#0f172a; white-space:pre-wrap;">'
+        . nl2br(htmlspecialchars($body)) . '</div>';
+    return sendMail($toEmail, $toName, $subject, $html, $body);
 }
 
 function buildCredentialsEmailHtml($toName, $loginEmail, $plainPassword) {
