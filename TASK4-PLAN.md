@@ -59,7 +59,7 @@ To czyni kampanię głównym zakresem (scope) pod klientem. Dziś wszystko jest 
 Przy pełnych kampaniach trzeba rozdzielić, co jest **per-kampania**, a co **per-klient**:
 
 - **Per-kampania** (przenoszone/kluczowane `campaign_id`): wszystkie design-tokeny (kolory, czcionki, hub, ramki, pointer, button/spin_trigger/spin_hint), `estimated_spins`, `lead_capture_enabled`, `lead_fields`, teksty wygranej, `background_*`, `saved_preset`.
-- **Per-klient** (zostają na `customers`/klient): `export_enabled` (płatny feature), konfiguracja e-mail (Resend/SMTP w `email.secret.php`), ewentualnie logo firmowe jako domyślne.
+- **Per-klient** (zostają na `customers`/klient): `export_enabled` (płatny feature), **`campaign_limit`** (limit liczby kampanii, super-admin), konfiguracja e-mail (Resend/SMTP w `email.secret.php`), ewentualnie logo firmowe jako domyślne.
 
 ---
 
@@ -67,9 +67,12 @@ Przy pełnych kampaniach trzeba rozdzielić, co jest **per-kampania**, a co **pe
 
 **Kampanie (dashboard, auth):**
 - `GET /api/campaigns` — lista kampanii klienta
-- `POST /api/campaigns` — utwórz (klonuje domyślny design albo pustą)
-- `PUT /api/campaigns?id=` — edytuj (nazwa, on_empty, default_segment, status)
-- `DELETE /api/campaigns?id=` — usuń/archiwizuj
+- `POST /api/campaigns` — utwórz (`{mode: 'empty'|'copy', source_id?}`); sprawdza `campaign_limit`
+- `PUT /api/campaigns?id=` — edytuj (nazwa, on_empty, default_segment); **blokuje `ended → running`**
+- `POST /api/campaigns/clone?id=` — klonuj (także zakończoną) → nowy draft
+- `POST /api/campaigns/start` — `{campaign_id, session_id}` uruchom na sparowanym ekranie
+- `POST /api/campaigns/end` — `{campaign_id}` zakończ (terminalnie) + zwolnij ekran
+- `DELETE /api/campaigns?id=` — archiwizuj (soft) 
 - Wszystkie istniejące (`segments`, `settings`, `spin`, `stats`, `leads`, `export`) — dostają parametr `campaign_id` i scope po nim.
 
 **Parowanie (kiosk, bez auth admina):**
@@ -140,9 +143,20 @@ Każda faza = osobny, testowalny kawałek (i osobne commity/PR).
 
 ---
 
-## 11. Otwarte decyzje (do potwierdzenia przed Fazą 1)
-1. **Tworzenie kampanii:** nowa kampania startuje jako *kopia* wybranej istniejącej (design+segmenty) czy jako *pusta*? (proponuję: wybór — „pusta" lub „kopiuj z…").
-2. **Segment „default" (Niete):** auto-tworzony przy włączeniu `on_empty=default`, czy wskazujesz istniejący segment?
-3. **Re-parowanie na żywo:** czy admin może przełączyć duży ekran na inną kampanię bez restartu sesji? (proponuję: tak, przez ponowny `pair`).
-4. **QR:** deep-link do strony parowania (wygodne skanowanie telefonem) czy sam kod? (proponuję: deep-link + kod jako fallback).
-5. **Historia/archiwum:** czy zakończona kampania ma być archiwizowana (read-only ze statystykami) i klonowalna? (proponuję: tak).
+## 11. Rozstrzygnięte decyzje (zatwierdzone 2026-08-06)
+1. **Tworzenie kampanii:** wybór przy zakładaniu — **„pusta"** albo **„kopiuj z…"** (design + segmenty ze wskazanej kampanii).
+2. **Segment „default" (Niete = „nic/brak nagrody"):** klient **wskazuje istniejący segment** jako `default_segment_id`. Używany tylko w trybie `on_empty=default`.
+3. **Przełączanie kampanii na ekranie:** **bez re-skanowania.** Parowanie QR wiąże urządzenie z KLIENTEM raz (trwale). Zmiana kampanii = z dashboardu: **zakończ X → wystartuj X+1** na tym samym ekranie. Zakończenie zwalnia ekran do stanu „idle".
+4. **QR:** deep-link do strony parowania + kod jako fallback.
+5. **Archiwum/klonowanie:** zakończona kampania jest **archiwizowana (read-only, ze statystykami) i klonowalna**.
+
+## 12. Dodatkowe wymagania (kontrola płatnej usługi)
+- **Zakończona kampania jest terminalna — NIE można jej zrestartować.** Ponowne użycie = klonuj → nowa kampania (draft). Wymuszone w API (blokada `ended → running`).
+- **Limit kampanii per klient** — kolumna `customers.campaign_limit` (INTEGER), ustawiana **tylko przez super-admina** (jak `export_enabled`). `POST /api/campaigns` sprawdza liczbę kampanii klienta < limit; przekroczenie → 403.
+  - *Do ustalenia:* limit liczy **wszystkie** kampanie (łącznie z zakończonymi/archiwum — każda = opłacona jednostka) czy tylko aktywne? Domyślnie: **wszystkie utworzone**.
+
+## 13. Model parowania (doprecyzowany po decyzji #3)
+`kiosk_sessions.status`: `unpaired` (czeka na sparowanie QR) → `idle` (sparowany z klientem, brak kampanii) → `running` (przypisana kampania).
+- **Parowanie (raz):** `POST /api/kiosk/pair {code}` (auth admina) → wiąże `customer_id`, status `idle`. Urządzenie widoczne w dashboardzie jako „Ekran".
+- **Start kampanii:** `POST /api/campaigns/start {campaign_id, session_id}` → `kiosk_sessions.campaign_id = X`, status `running`; `campaigns.status = running`.
+- **Koniec kampanii:** `POST /api/campaigns/end {campaign_id}` → `campaigns.status = ended` (terminalne), `kiosk_sessions.campaign_id = NULL`, status `idle`. Potem X+1 startuje na tym samym ekranie bez re-skanowania.
