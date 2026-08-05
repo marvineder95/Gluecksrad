@@ -18,15 +18,18 @@ func New(db *gorm.DB) *Server {
 }
 
 // Router baut den HTTP-Router mit allen Routen auf.
+// Jede Domain hat eine eigene routeXxx()-Methode in einer eigenen Datei —
+// parallele Agenten dürfen NUR ihre jeweilige Datei anfassen.
 func (s *Server) Router() http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
+	// Health-Check (öffentlich)
 	r.Get("/api/health", s.handleHealth)
 
-	// Auth
+	// Auth (Login öffentlich; Me/Logout erfordern Token)
 	r.Post("/api/auth/login", s.handleLogin)
 	r.Group(func(pr chi.Router) {
 		pr.Use(s.requireAuth)
@@ -34,7 +37,19 @@ func (s *Server) Router() http.Handler {
 		pr.Post("/api/auth/logout", s.handleLogout)
 	})
 
-	// Weitere Endpunkte (segments, settings, campaigns, spin, ...) folgen in Phase 1.
+	// Domain-Router — jeder Agent füllt seine eigene Datei aus.
+	// Auth-Anforderungen sind in den jeweiligen routeXxx()-Methoden festgelegt
+	// (entsprechend der PHP-Logik; kommentiert in den Stub-Dateien).
+	s.routeSegments(r)
+	s.routeSettings(r)
+	s.routeSpin(r)
+	s.routeStats(r)
+	s.routeLeads(r)
+	s.routeExport(r)
+	s.routeCustomers(r)
+	s.routeUsers(r)
+	s.routeCampaigns(r)
+
 	return r
 }
 

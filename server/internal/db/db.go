@@ -3,8 +3,10 @@ package db
 import (
 	"log"
 
+	"gluecksrad/server/internal/migrations"
 	"gluecksrad/server/internal/models"
 
+	"github.com/pressly/goose/v3"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -22,13 +24,30 @@ func Open(dsn string, dev bool) (*gorm.DB, error) {
 	})
 }
 
-// AutoMigrate legt die Kern-Tabellen an (Phase 0). Für Produktion später
-// versionierte Migrationen (goose); AutoMigrate ist bewusst nur für Dev/Bootstrap.
+// Migrate wendet alle ausstehenden goose-Migrationen an (ersetzt AutoMigrate).
+func Migrate(g *gorm.DB) error {
+	sqlDB, err := g.DB()
+	if err != nil {
+		return err
+	}
+	goose.SetBaseFS(migrations.FS)
+	if err := goose.SetDialect("postgres"); err != nil {
+		return err
+	}
+	return goose.Up(sqlDB, "sql")
+}
+
+// AutoMigrate bleibt als Hilfsmittel für Tests erhalten (nicht im Produktions-Start).
 func AutoMigrate(g *gorm.DB) error {
 	return g.AutoMigrate(
 		&models.Customer{},
 		&models.User{},
 		&models.Campaign{},
+		&models.Segment{},
+		&models.Setting{},
+		&models.Spin{},
+		&models.SpinPool{},
+		&models.Lead{},
 	)
 }
 

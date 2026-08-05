@@ -21,9 +21,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB-Verbindung fehlgeschlagen: %v", err)
 	}
-	if err := db.AutoMigrate(gdb); err != nil {
-		log.Fatalf("AutoMigrate fehlgeschlagen: %v", err)
+
+	// Versionierte goose-Migrationen statt AutoMigrate.
+	if err := db.Migrate(gdb); err != nil {
+		log.Fatalf("Migration fehlgeschlagen: %v", err)
 	}
+
 	if _, err := db.SeedSuperAdmin(gdb); err != nil {
 		log.Fatalf("Seed fehlgeschlagen: %v", err)
 	}

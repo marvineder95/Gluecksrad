@@ -60,9 +60,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	expires := time.Now().Add(30 * 24 * time.Hour)
 	now := time.Now()
 	if err := s.DB.Model(&user).Updates(map[string]any{
-		"api_token":         token,
-		"api_token_expires": expires,
-		"last_login_at":     now,
+		"api_token":            token,
+		"api_token_expires_at": expires,
+		"last_login_at":        now,
 	}).Error; err != nil {
 		writeError(w, http.StatusInternalServerError, "Fehler beim Login")
 		return
@@ -98,8 +98,8 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 	user := userFromContext(r.Context())
 	s.DB.Model(&models.User{}).Where("id = ?", user.ID).Updates(map[string]any{
-		"api_token":         nil,
-		"api_token_expires": nil,
+		"api_token":            nil,
+		"api_token_expires_at": nil,
 	})
 	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
