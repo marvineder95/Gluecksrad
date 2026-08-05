@@ -153,7 +153,12 @@ Każda faza = osobny, testowalny kawałek (i osobne commity/PR).
 ## 12. Dodatkowe wymagania (kontrola płatnej usługi)
 - **Zakończona kampania jest terminalna — NIE można jej zrestartować.** Ponowne użycie = klonuj → nowa kampania (draft). Wymuszone w API (blokada `ended → running`).
 - **Limit kampanii per klient** — kolumna `customers.campaign_limit` (INTEGER), ustawiana **tylko przez super-admina** (jak `export_enabled`). `POST /api/campaigns` sprawdza liczbę kampanii klienta < limit; przekroczenie → 403.
-  - *Do ustalenia:* limit liczy **wszystkie** kampanie (łącznie z zakończonymi/archiwum — każda = opłacona jednostka) czy tylko aktywne? Domyślnie: **wszystkie utworzone**.
+  - **Ustalone:** limit liczy **wszystkie utworzone** kampanie (łącznie z zakończonymi/archiwum — każda = opłacona jednostka). Klonowanie/tworzenie sprawdza `COUNT(campaigns WHERE customer_id) < campaign_limit`.
+
+> **Uwaga architektoniczna (2026-08-06):** ustalono rewrite backendu na **Go + PostgreSQL PRZED Taskiem 4**.
+> Scope kampanii (`campaign_id`) i tabele Task 4 wchodzą do schematu Postgres od razu, więc **Faza 1 Taska 4
+> (model danych + scoping) jest realizowana w ramach rewrite'u**. Real-time parowania/powiadomień (Faza 2/3)
+> idzie natywnie przez WebSocket. Szczegóły w `REWRITE-PLAN.md`.
 
 ## 13. Model parowania (doprecyzowany po decyzji #3)
 `kiosk_sessions.status`: `unpaired` (czeka na sparowanie QR) → `idle` (sparowany z klientem, brak kampanii) → `running` (przypisana kampania).
