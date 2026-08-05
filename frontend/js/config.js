@@ -54,7 +54,8 @@ const CONFIG = {
         label_shadow: '1',            // Schatten/Glow der Labels an/aus
         label_shadow_color: '#000000',
         spin_button_text: 'Drehen',
-        spin_trigger: 'button',       // button | hub | swipe
+        spin_trigger: 'button',       // button | hub | swipe | buzzer
+        spin_hint: '',                // optionaler Hinweistext (leer = Standard je Modus)
         // Erweiterte Rad-Stil-Tokens (für Design-Presets)
         pointer_enabled: '1',
         pointer_color: '#C8A866',

@@ -354,8 +354,12 @@ const EventPage = {
             const list = segments.value || [];
             const isDepleted = (s) => !parseInt(s.unlimited || 0) && s.remaining !== null && s.remaining !== undefined && Number(s.remaining) <= 0;
             return list
+                // 'hide': aufgebrauchte Segmente ganz ausblenden
                 .filter(s => !(isDepleted(s) && (s.depleted_behavior || 'hide') === 'hide'))
-                .map(s => isDepleted(s) ? Object.assign({}, s, { depleted: true }) : s);
+                // 'grey': ausgegraut markieren; 'normal': normal zeigen (nicht ausgrauen)
+                .map(s => (isDepleted(s) && (s.depleted_behavior || 'hide') === 'grey')
+                    ? Object.assign({}, s, { depleted: true })
+                    : s);
         });
 
         // Während einer Drehung + Gewinnanzeige die auf dem Rad gezeigten
@@ -389,6 +393,9 @@ const EventPage = {
         });
         const buttonText = Vue.computed(() => settings.value.spin_button_text || 'DREHEN');
         const spinHint = Vue.computed(() => {
+            // Eigener Hinweistext hat Vorrang, falls im Dashboard gesetzt
+            const custom = (settings.value.spin_hint || '').trim();
+            if (custom) return custom;
             if (spinTrigger.value === 'hub') return 'Auf die Mitte tippen zum Drehen';
             if (spinTrigger.value === 'swipe') return 'Rad mit dem Finger anschwingen';
             return 'Buzzer drücken zum Drehen';

@@ -143,6 +143,7 @@ const DashboardPage = {
                 label_shadow_color: sets.label_shadow_color || CONFIG.DEFAULTS.label_shadow_color,
                 spin_button_text: sets.spin_button_text || CONFIG.DEFAULTS.spin_button_text,
                 spin_trigger: sets.spin_trigger || CONFIG.DEFAULTS.spin_trigger,
+                spin_hint: sets.spin_hint != null ? sets.spin_hint : CONFIG.DEFAULTS.spin_hint,
                 pointer_enabled: (sets.pointer_enabled === '0' || sets.pointer_enabled === 0) ? '0' : '1',
                 pointer_color: sets.pointer_color || CONFIG.DEFAULTS.pointer_color,
                 pointer_style: sets.pointer_style || CONFIG.DEFAULTS.pointer_style,
@@ -664,6 +665,7 @@ const DashboardPage = {
                 formData.append('label_shadow_color', formSettings.value.label_shadow_color);
                 formData.append('spin_button_text', formSettings.value.spin_button_text);
                 formData.append('spin_trigger', formSettings.value.spin_trigger || 'button');
+                formData.append('spin_hint', formSettings.value.spin_hint || '');
                 formData.append('pointer_enabled', formSettings.value.pointer_enabled === '0' ? '0' : '1');
                 formData.append('pointer_color', formSettings.value.pointer_color);
                 formData.append('pointer_style', formSettings.value.pointer_style);

@@ -87,7 +87,8 @@ if ($method === 'POST') {
     $color = sanitizeText($data['color'] ?? '#FF6B35');
     if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) { $color = '#FF6B35'; }
     $unlimited = (!empty($data['unlimited']) && $data['unlimited'] !== '0' && $data['unlimited'] !== 'false') ? 1 : 0;
-    $depletedBehavior = ($data['depleted_behavior'] ?? 'hide') === 'grey' ? 'grey' : 'hide';
+    $depletedBehavior = in_array($data['depleted_behavior'] ?? 'hide', ['hide', 'grey', 'normal'], true)
+        ? $data['depleted_behavior'] : 'hide';
     $isRespin = (!empty($data['is_respin']) && $data['is_respin'] !== '0' && $data['is_respin'] !== 'false') ? 1 : 0;
     $imageOffsetX = floatval($data['image_offset_x'] ?? 0);
     $imageOffsetY = floatval($data['image_offset_y'] ?? 0);

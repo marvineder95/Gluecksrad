@@ -329,8 +329,8 @@
                 </div>
             </div>
 
-            <!-- Kampagne abgeschlossen Overlay -->
-            <div v-if="campaignEnded" class="campaign-ended-overlay">
+            <!-- Kampagne abgeschlossen Overlay (nicht gleichzeitig mit Gewinn-/Neu-Dreh-Overlay) -->
+            <div v-if="campaignEnded && !showWin" class="campaign-ended-overlay">
                 <div class="campaign-ended-content">
                     <div class="campaign-ended-icon">🏆</div>
                     <h2>Kampagne abgeschlossen</h2>
@@ -1173,7 +1173,7 @@
                                             {{ formSettings.spin_button_text || 'Drehen' }}
                                         </button>
                                         <div v-else class="preview-stage-hint">
-                                            {{ formSettings.spin_trigger === 'hub' ? '☝ Mitte antippen' : '↻ Rad anschwingen' }}
+                                            {{ formSettings.spin_hint || (formSettings.spin_trigger === 'hub' ? '☝ Mitte antippen' : formSettings.spin_trigger === 'swipe' ? '↻ Rad anschwingen' : '⏻ Buzzer drücken') }}
                                         </div>
                                     </div>
                                 </div>
@@ -1568,15 +1568,23 @@
                                 <div class="branding-item" style="grid-column: 1 / -1;">
                                     <label>Start-Auslöser</label>
                                     <select class="admin-select" v-model="formSettings.spin_trigger">
-                                        <option value="button">Buzzer / Button</option>
+                                        <option value="button">Button auf dem Bildschirm</option>
+                                        <option value="buzzer">Ohne Button (Buzzer / Taste)</option>
                                         <option value="hub">Mittelelement antippen</option>
                                         <option value="swipe">Rad anschwingen (Wischen)</option>
                                     </select>
                                     <p class="input-hint" style="margin-top:4px;font-size:0.72rem;opacity:0.7;">
-                                        <span v-if="formSettings.spin_trigger === 'button'">Ein Buzzer/Button unter oder über dem Rad startet die Drehung.</span>
+                                        <span v-if="formSettings.spin_trigger === 'button'">Ein Button unter oder über dem Rad startet die Drehung.</span>
+                                        <span v-else-if="formSettings.spin_trigger === 'buzzer'">Kein Button – ein physischer Buzzer (bzw. eine beliebige Taste) startet die Drehung. Nur der Hinweistext wird angezeigt.</span>
                                         <span v-else-if="formSettings.spin_trigger === 'hub'">Ein Tippen auf das Rad (Mittelelement) startet die Drehung – ohne Button.</span>
                                         <span v-else>Die Spielenden schwingen das Rad mit dem Finger an. Die Wischgeschwindigkeit steuert Dauer und Umdrehungen – der Gewinn bleibt fair vom System bestimmt.</span>
                                     </p>
+                                </div>
+                                <div class="branding-item" style="grid-column: 1 / -1;">
+                                    <label>Hinweistext (optional)</label>
+                                    <input type="text" class="admin-input" v-model="formSettings.spin_hint"
+                                           :placeholder="formSettings.spin_trigger === 'buzzer' ? 'z. B. Buzzer drücken zum Drehen' : formSettings.spin_trigger === 'hub' ? 'z. B. Auf die Mitte tippen' : formSettings.spin_trigger === 'swipe' ? 'z. B. Rad anschwingen' : 'z. B. Buzzer drücken zum Drehen'">
+                                    <p class="input-hint" style="margin-top:4px;font-size:0.72rem;opacity:0.7;">Leer lassen für den Standardtext des gewählten Modus.</p>
                                 </div>
                                 <div class="branding-item" v-if="formSettings.spin_trigger === 'button'">
                                     <label>Button-Text</label>
@@ -2146,6 +2154,7 @@
                             <select class="admin-select" v-model="segmentForm.depleted_behavior">
                                 <option value="hide">Im Kiosk ausblenden</option>
                                 <option value="grey">Ausgegraut anzeigen</option>
+                                <option value="normal">Normal anzeigen (wird nicht mehr ausgelost)</option>
                             </select>
                         </div>
                         <div class="admin-form-group">
