@@ -22,6 +22,15 @@ func verifyPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
+// hashPassword erzeugt einen bcrypt-Hash mit DefaultCost.
+func hashPassword(password string) (string, error) {
+	h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(h), nil
+}
+
 func randomToken() string {
 	b := make([]byte, 32)
 	_, _ = rand.Read(b)
