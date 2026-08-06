@@ -110,6 +110,10 @@ type SpinPool struct {
 	SpinID        *uint64    `                      json:"spin_id"`
 }
 
+// TableName erzwingt den Tabellennamen (gorm würde sonst zu "spin_pools"
+// pluralisieren; die Migration heißt "spin_pool").
+func (SpinPool) TableName() string { return "spin_pool" }
+
 // Lead erfasst Kontaktdaten eines Teilnehmers.
 // Data enthält optionale Zusatzfelder als JSONB (datatypes.JSON → Postgres jsonb).
 type Lead struct {
