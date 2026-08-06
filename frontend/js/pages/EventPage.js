@@ -1,6 +1,34 @@
 const EventPage = {
     components: { WheelComponent },
     setup() {
+        // === KAMPAGNEN-ID aus URL lesen ===
+        // Die App nutzt Hash-Routing (#/event). campaign_id kann in zwei Formen auftauchen:
+        //   1. Vor dem Hash: /index.html?campaign_id=1#/event  (window.location.search)
+        //   2. Nach dem Hash: /index.html#/event?campaign_id=1  (im Hash-String)
+        const getCampaignIdFromUrl = () => {
+            // Erst in window.location.search suchen
+            const searchParams = new URLSearchParams(window.location.search);
+            if (searchParams.get('campaign_id')) return searchParams.get('campaign_id');
+            // Dann im Hash-Teil suchen (alles nach dem ersten '?')
+            const hash = window.location.hash || '';
+            const qIdx = hash.indexOf('?');
+            if (qIdx !== -1) {
+                const hashParams = new URLSearchParams(hash.slice(qIdx + 1));
+                if (hashParams.get('campaign_id')) return hashParams.get('campaign_id');
+            }
+            return null;
+        };
+
+        const campaignId = getCampaignIdFromUrl();
+        const noCampaign = Vue.ref(!campaignId);
+
+        // Helper: append campaign_id to url
+        const withCid = (url) => {
+            if (!campaignId) return url;
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'campaign_id=' + campaignId;
+        };
+
         const segments = Vue.ref([]);
         const settings = Vue.ref({});
         const rotation = Vue.ref(0);
@@ -17,7 +45,6 @@ const EventPage = {
             let fields = [];
             try { const a = JSON.parse(settings.value.lead_fields || '[]'); if (Array.isArray(a)) fields = a; } catch (e) {}
             const enabled = fields.filter(f => f.enabled);
-            // Fallback: wenn nichts konfiguriert -> Name + E-Mail
             if (enabled.length === 0) {
                 return [
                     { key: 'name', label: 'Name', type: 'text', multiline: false, required: true },
@@ -40,24 +67,25 @@ const EventPage = {
         const updateWheelSize = () => {
             if (!wheelAreaRef.value) return;
             const rect = wheelAreaRef.value.getBoundingClientRect();
-            // Generous safety margin for: padding, SVG rim overflow, marker, and gold border
             const safetyMargin = 80;
             const maxSize = Math.min(rect.width, rect.height) - safetyMargin;
             wheelSize.value = Math.max(280, Math.min(Math.floor(maxSize), 1400));
         };
 
         const loadData = async () => {
+            if (!campaignId) return;
             try {
                 const [segs, sets, statsData] = await Promise.all([
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.stats)
+                    api.get(withCid(CONFIG.ENDPOINTS.segments)),
+                    api.get(withCid(CONFIG.ENDPOINTS.settings)),
+                    api.get(withCid(CONFIG.ENDPOINTS.stats))
                 ]);
                 segments.value = segs;
-                settings.value = sets;
+                // Fehlende Keys mit Defaults auffüllen, sonst überschreiben
+                // undefined-Werte die Skin-Defaults (schwarzes Rad bei dünnem Settings-Satz).
+                settings.value = Object.assign({}, CONFIG.DEFAULTS, sets);
                 campaignEnded.value = statsData.remaining_spins <= 0 || statsData.campaign_status === 'ended';
                 leadCaptureEnabled.value = sets.lead_capture_enabled === '1' || sets.lead_capture_enabled === 1 || sets.lead_capture_enabled === true;
-                // Lead-Formular proaktiv anzeigen (vor dem Drehen)
                 if (leadCaptureEnabled.value && !currentLeadId.value && !leadSkipped.value && !campaignEnded.value) {
                     showLeadForm.value = true;
                 }
@@ -67,32 +95,24 @@ const EventPage = {
         };
 
         const handleKeydown = (event) => {
-            // Keine Reaktion, wenn ein Eingabefeld fokussiert ist (Lead-Formular o.ä.)
             const activeTag = document.activeElement?.tagName?.toLowerCase();
             if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
                 return;
             }
-
-            // System-/Modifier-Tasten ignorieren
             if (['Escape', 'Tab', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12'].includes(event.key)) {
                 return;
             }
             if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'NumLock', 'ScrollLock'].includes(event.key)) {
                 return;
             }
-            // Browser-Shortcuts nicht blockieren (z.B. Strg+R, Cmd+T)
             if (event.ctrlKey || event.altKey || event.metaKey) {
                 return;
             }
-
             event.preventDefault();
-
-            // Gewinnbildschirm schließen, falls offen
             if (showWin.value) {
                 nextRound();
                 return;
             }
-
             if (!spinning.value) spin();
         };
 
@@ -113,14 +133,12 @@ const EventPage = {
             if (!skip) {
                 const fields = activeLeadFields.value;
                 const val = (k) => (leadData.value[k] != null ? String(leadData.value[k]).trim() : '');
-                // Pflichtfelder prüfen
                 for (const f of fields) {
                     if (f.required && !val(f.key)) {
                         leadError.value = 'Bitte „' + f.label + '" ausfüllen.';
                         return false;
                     }
                 }
-                // E-Mail-Format prüfen (falls E-Mail-Feld vorhanden und ausgefüllt)
                 const emailField = fields.find(f => f.key === 'email' || /mail/i.test(f.label));
                 if (emailField && val(emailField.key)) {
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,16 +151,14 @@ const EventPage = {
                     leadError.value = 'Bitte stimme den Teilnahmebedingungen zu.';
                     return false;
                 }
-                // Name/E-Mail für die bestehenden Spalten ableiten
                 const derivedEmail = emailField ? val(emailField.key) : '';
                 let derivedName = val('name');
                 if (!derivedName) derivedName = (val('vorname') + ' ' + val('nachname')).trim();
                 if (!derivedName) derivedName = derivedEmail || 'Gast';
-                // Daten mit Labels für Anzeige/Export aufbereiten
                 const dataOut = {};
                 fields.forEach(f => { dataOut[f.label] = val(f.key); });
                 try {
-                    const result = await api.post(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads, {
+                    const result = await api.post(withCid(CONFIG.ENDPOINTS.leads), {
                         name: derivedName,
                         email: derivedEmail,
                         consent_given: true,
@@ -180,7 +196,7 @@ const EventPage = {
 
             try {
                 const payload = currentLeadId.value ? { lead_id: currentLeadId.value } : {};
-                const result = await api.post(CONFIG.API_BASE + CONFIG.ENDPOINTS.spin, payload);
+                const result = await api.post(withCid(CONFIG.ENDPOINTS.spin), payload);
                 if (result.error) {
                     spinning.value = false;
                     campaignEnded.value = result.code === 'campaign_ended';
@@ -190,8 +206,6 @@ const EventPage = {
 
                 winner.value = result.winner;
 
-                // Aktuell angezeigte Segmente einfrieren – exakt die Liste,
-                // über die der Server winner_index/total_segments berechnet hat.
                 frozenSegments.value = displaySegments.value.slice();
 
                 runSpinAnimation({
@@ -207,7 +221,6 @@ const EventPage = {
                             showWin.value = true;
                             SoundFX.playWin();
                             if (confetti) confetti.start();
-                            // Gewinnbildschirm nach 5 Sekunden automatisch schließen
                             if (winTimer) clearTimeout(winTimer);
                             winTimer = setTimeout(() => {
                                 if (showWin.value) {
@@ -215,7 +228,6 @@ const EventPage = {
                                 }
                             }, 5000);
                         }, CONFIG.ANIMATION.win_overlay_delay_ms);
-                        // Daten neu laden, um remaining spins zu aktualisieren
                         loadData();
                     }
                 });
@@ -226,20 +238,17 @@ const EventPage = {
             }
         };
 
-        // Neu-Dreh: Overlay schliessen und direkt erneut drehen, Lead bleibt erhalten
         const respinAgain = () => {
             if (winTimer) { clearTimeout(winTimer); winTimer = null; }
             showWin.value = false;
             if (confetti) confetti.stop();
-            frozenSegments.value = null; // Rad wieder auf aktuellen Stand bringen
+            frozenSegments.value = null;
             spin(true);
         };
 
-        // === Start-Auslöser: Button | Mittelelement | Swipe ===
         const spinTrigger = Vue.computed(() => settings.value.spin_trigger || 'button');
         let dragState = null;
 
-        // Winkel des Zeigers relativ zum Radmittelpunkt (in Grad)
         const wheelAngleAt = (clientX, clientY) => {
             const el = wheelAreaRef.value;
             if (!el) return 0;
@@ -249,7 +258,6 @@ const EventPage = {
             return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI;
         };
 
-        // Klick/Tap auf das Rad -> nur im Modus "hub" (Mittelelement) auslösen
         const onWheelClick = () => {
             if (spinTrigger.value !== 'hub') return;
             if (spinning.value || showWin.value || campaignEnded.value) return;
@@ -275,10 +283,8 @@ const EventPage = {
             if (d < -180) d += 360;
             const now = performance.now();
             const dt = Math.max(1, now - dragState.lastTime);
-            // Rad folgt dem Finger
             rotation.value += d;
             dragState.moved += Math.abs(d);
-            // Geglättete Winkelgeschwindigkeit (Grad/ms)
             dragState.velocity = 0.7 * dragState.velocity + 0.3 * (d / dt);
             dragState.lastAngle = ang;
             dragState.lastTime = now;
@@ -286,19 +292,13 @@ const EventPage = {
 
         const onWheelPointerUp = () => {
             if (!dragState) return;
-            const vSigned = dragState.velocity;      // Vorzeichen = Wischrichtung
+            const vSigned = dragState.velocity;
             const v = Math.abs(vSigned);
             const moved = dragState.moved;
             dragState = null;
-            // Reiner Tap (kaum Bewegung) -> ignorieren, echter Swipe nötig
             if (moved < 10) return;
-            // Geschwindigkeit -> Animationsdauer/Umdrehungen (Ergebnis bleibt fix!)
-            // Langsamer Swipe: wenige Umdrehungen, aber lange Dauer (dreht langsam, aber lange).
-            // Schneller Swipe: viele Umdrehungen, kürzere Dauer (dreht schnell).
             const extraRotations = Math.min(9, Math.max(2, 2 + v * 3));
             const duration = Math.min(8500, Math.max(3500, 7000 - v * 900));
-            // Nachdrehung in Wischrichtung fortsetzen (rotation folgt dem Finger
-            // mit += d, daher entspricht das Vorzeichen der Rotationsrichtung).
             const direction = vSigned >= 0 ? 1 : -1;
             spin(false, { extraRotations, duration, direction });
         };
@@ -310,15 +310,13 @@ const EventPage = {
             }
             showWin.value = false;
             if (confetti) confetti.stop();
-            frozenSegments.value = null; // Rad wieder auf aktuellen Stand bringen
-            // Lead-Formular für nächste Runde zurücksetzen, wenn aktiviert
+            frozenSegments.value = null;
             if (leadCaptureEnabled.value) {
                 currentLeadId.value = null;
                 leadSkipped.value = false;
                 leadForm.value = { name: '', email: '' };
                 leadData.value = {};
                 consentGiven.value = false;
-                // Formular für den nächsten Spieler direkt wieder anzeigen
                 showLeadForm.value = true;
             }
         };
@@ -332,7 +330,6 @@ const EventPage = {
         });
         const logoUrl = Vue.computed(() => getLogoUrl(settings.value));
 
-        // Design-Tokens (Skin) für das echte Kiosk-Rad
         const skin = Vue.computed(() => {
             const s = settings.value || {};
             return {
@@ -349,24 +346,17 @@ const EventPage = {
                 hub_text_layout: s.hub_text_layout, hub_logo_bg: s.hub_logo_bg
             };
         });
-        // Angezeigte Segmente: erschöpfte je nach depleted_behavior ausblenden/ausgrauen
+
         const displaySegments = Vue.computed(() => {
             const list = segments.value || [];
             const isDepleted = (s) => !parseInt(s.unlimited || 0) && s.remaining !== null && s.remaining !== undefined && Number(s.remaining) <= 0;
             return list
-                // 'hide': aufgebrauchte Segmente ganz ausblenden
                 .filter(s => !(isDepleted(s) && (s.depleted_behavior || 'hide') === 'hide'))
-                // 'grey': ausgegraut markieren; 'normal': normal zeigen (nicht ausgrauen)
                 .map(s => (isDepleted(s) && (s.depleted_behavior || 'hide') === 'grey')
                     ? Object.assign({}, s, { depleted: true })
                     : s);
         });
 
-        // Während einer Drehung + Gewinnanzeige die auf dem Rad gezeigten
-        // Segmente einfrieren. Sonst kann ein loadData() (nachlaufendes
-        // Erschöpfen eines Segments) das Rad neu zeichnen, während die
-        // Rotation schon feststeht -> Zeiger zeigt dann auf ein anderes
-        // Segment als der angezeigte Gewinn.
         const frozenSegments = Vue.ref(null);
         const wheelSegments = Vue.computed(() => frozenSegments.value || displaySegments.value);
 
@@ -393,7 +383,6 @@ const EventPage = {
         });
         const buttonText = Vue.computed(() => settings.value.spin_button_text || 'DREHEN');
         const spinHint = Vue.computed(() => {
-            // Eigener Hinweistext hat Vorrang, falls im Dashboard gesetzt
             const custom = (settings.value.spin_hint || '').trim();
             if (custom) return custom;
             if (spinTrigger.value === 'hub') return 'Auf die Mitte tippen zum Drehen';
@@ -402,7 +391,7 @@ const EventPage = {
         });
 
         Vue.onMounted(() => {
-            checkAuth({ redirectOnFailure: true });
+            if (!campaignId) return; // noCampaign guard — show error message in template
             loadData();
             if (confettiCanvas.value) {
                 confetti = new Confetti(confettiCanvas.value);
@@ -423,6 +412,7 @@ const EventPage = {
         });
 
         return {
+            noCampaign,
             segments, settings, rotation, spinning, showWin, winner, campaignEnded,
             confettiCanvas, spin, nextRound, respinAgain, bgStyle, handleSecretClick, logoUrl,
             skin, wheelFont, wheelAccent, buttonStyle, buttonText, spinHint, wheelBorders, displaySegments, wheelSegments,

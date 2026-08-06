@@ -1,6 +1,6 @@
 const LoginPage = {
     setup() {
-        const username = Vue.ref('');
+        const email = Vue.ref('');
         const password = Vue.ref('');
         const error = Vue.ref('');
         const settings = Vue.ref({});
@@ -8,7 +8,8 @@ const LoginPage = {
 
         const loadSettings = async () => {
             try {
-                const sets = await api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings);
+                // Login page loads settings without campaign_id (public, no campaign context yet)
+                const sets = await api.get(CONFIG.ENDPOINTS.settings);
                 settings.value = sets;
             } catch (e) {
                 console.error('Fehler beim Laden der Settings:', e);
@@ -22,16 +23,21 @@ const LoginPage = {
         const login = async () => {
             error.value = '';
             try {
-                const res = await api.post(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth, {
-                    username: username.value,
+                const res = await api.post(CONFIG.ENDPOINTS.auth.login, {
+                    email: email.value,
                     password: password.value
                 });
                 if (res.success) {
-                    localStorage.setItem('admin_token', res.token);
-                    if (res.csrf_token) {
-                        localStorage.setItem('csrf_token', res.csrf_token);
+                    // Save token – Go backend does not use CSRF
+                    localStorage.setItem('api_token', res.token);
+                    if (res.user) {
+                        localStorage.setItem('user_role', res.user.role || '');
+                        localStorage.setItem('customer_id', res.user.customer_id || '');
+                        localStorage.setItem('user_email', res.user.email || '');
+                        localStorage.setItem('user_id', res.user.id || '');
                     }
-                    navigateTo('#/dashboard');
+                    const role = res.user?.role || '';
+                    navigateTo(getLoginRedirectHash(role));
                 } else {
                     error.value = res.error || 'Login fehlgeschlagen';
                 }
@@ -46,7 +52,7 @@ const LoginPage = {
             loadSettings();
         });
 
-        return { username, password, error, login, logoUrl, showPassword, togglePassword };
+        return { email, password, error, login, logoUrl, showPassword, togglePassword };
     },
     template: '#login-template'
 };

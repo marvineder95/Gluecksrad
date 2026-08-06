@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("Seed fehlgeschlagen: %v", err)
 	}
 
-	srv := httpapi.New(gdb)
+	srv := httpapi.New(gdb, cfg.StaticDir)
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      srv.Router(),

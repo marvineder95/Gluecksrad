@@ -1,11 +1,9 @@
 // === API Service ===
 
 function getAuthHeaders() {
-    const token = localStorage.getItem('admin_token');
-    const csrf = localStorage.getItem('csrf_token');
+    const token = localStorage.getItem('api_token');
     const headers = {};
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    if (csrf) headers['X-CSRF-Token'] = csrf;
     return headers;
 }
 

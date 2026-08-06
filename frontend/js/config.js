@@ -2,17 +2,23 @@
 
 const CONFIG = {
     API_URL: '',
-    API_BASE: '/backend/api',
+    API_BASE: '',
     ENDPOINTS: {
-        segments: '/segments.php',
-        settings: '/settings.php',
-        spin: '/spin.php',
-        leads: '/leads.php',
-        stats: '/stats.php',
-        admin_stats: '/admin_stats.php',
-        auth: '/auth.php',
-        themes: '/themes.php',
-        export: '/export.php'
+        segments: '/api/segments',
+        settings: '/api/settings',
+        spin: '/api/spin',
+        leads: '/api/leads',
+        stats: '/api/stats',
+        export: '/api/export',
+        auth: {
+            login: '/api/auth/login',
+            me: '/api/auth/me',
+            logout: '/api/auth/logout'
+        },
+        customers: '/api/customers',
+        users: '/api/users',
+        campaigns: '/api/campaigns'
+        // themes: no backend endpoint in Go – use local THEMES constant instead
     },
     DEFAULTS: {
         total_spins_limit: 1000,

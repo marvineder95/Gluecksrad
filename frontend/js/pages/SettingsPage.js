@@ -33,7 +33,7 @@ const SettingsPage = {
 
         const loadCustomers = async () => {
             try {
-                const res = await api.get(CONFIG.API_BASE + '/customers.php');
+                const res = await api.get(CONFIG.ENDPOINTS.customers);
                 customers.value = res;
             } catch (e) {
                 addToast('Fehler beim Laden der Kunden', 'error');
@@ -61,7 +61,7 @@ const SettingsPage = {
             if (savingCustomer.value) return;
             savingCustomer.value = true;
             try {
-                const endpoint = CONFIG.API_BASE + '/customers.php' + (editingCustomer.value ? '?id=' + editingCustomer.value : '');
+                const endpoint = CONFIG.ENDPOINTS.customers + (editingCustomer.value ? '?id=' + editingCustomer.value : '');
                 if (editingCustomer.value) {
                     await api.put(endpoint, customerForm.value);
                     addToast('Kunde aktualisiert');
@@ -96,7 +96,7 @@ const SettingsPage = {
 
         const toggleCustomer = async (customer) => {
             try {
-                await api.put(CONFIG.API_BASE + '/customers.php?id=' + customer.id, { is_active: customer.is_active ? 0 : 1 });
+                await api.put(CONFIG.ENDPOINTS.customers + '?id=' + customer.id, { is_active: customer.is_active ? 0 : 1 });
                 addToast('Kunde ' + (customer.is_active ? 'deaktiviert' : 'aktiviert'));
                 loadCustomers();
             } catch (e) {
@@ -117,7 +117,7 @@ const SettingsPage = {
         const confirmDelete = async () => {
             if (!confirmCustomer.value) return;
             try {
-                await api.delete(CONFIG.API_BASE + '/customers.php?id=' + confirmCustomer.value.id);
+                await api.delete(CONFIG.ENDPOINTS.customers + '?id=' + confirmCustomer.value.id);
                 addToast('Kunde gelöscht');
                 loadCustomers();
             } catch (e) {
@@ -162,7 +162,7 @@ const SettingsPage = {
                 return;
             }
             try {
-                const res = await api.patch(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth, { email });
+                const res = await api.patch(CONFIG.ENDPOINTS.auth.me, { email });
                 currentUser.value.email = res.email || email;
                 addToast('E-Mail geändert');
                 closeOwnEmailModal();
@@ -200,7 +200,7 @@ const SettingsPage = {
                 return;
             }
             try {
-                await api.put(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth, {
+                await api.put(CONFIG.ENDPOINTS.auth.me, {
                     current_password,
                     new_password
                 });
@@ -218,7 +218,7 @@ const SettingsPage = {
 
         const logout = async () => {
             try {
-                await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth);
+                await api.post(CONFIG.ENDPOINTS.auth.logout);
             } catch (e) {
                 console.error('Logout-Fehler:', e);
             } finally {

@@ -44,6 +44,94 @@ const DashboardPage = {
             return formSettings.value.lead_capture_enabled === '1' || formSettings.value.lead_capture_enabled === 1 || formSettings.value.lead_capture_enabled === true;
         });
 
+        // === KAMPAGNEN-KONTEXT ===
+        const campaigns = Vue.ref([]);
+        const currentCampaignId = Vue.ref(null);
+        const showCampaignDropdown = Vue.ref(false);
+        const showNewCampaignModal = Vue.ref(false);
+        const newCampaignForm = Vue.ref({ name: '', mode: 'empty', source_id: '' });
+        const creatingCampaign = Vue.ref(false);
+
+        // Helper: append campaign_id to any URL
+        const withCampaign = (url) => {
+            const cid = currentCampaignId.value;
+            if (!cid) return url;
+            const sep = url.includes('?') ? '&' : '?';
+            return url + sep + 'campaign_id=' + cid;
+        };
+
+        const currentCampaign = Vue.computed(() => {
+            return campaigns.value.find(c => String(c.id) === String(currentCampaignId.value)) || null;
+        });
+
+        const loadCampaigns = async () => {
+            try {
+                const list = await api.get(CONFIG.ENDPOINTS.campaigns);
+                campaigns.value = Array.isArray(list) ? list : [];
+                // Initialise campaign from localStorage or fall back to first
+                const stored = localStorage.getItem('current_campaign_id');
+                const exists = campaigns.value.find(c => String(c.id) === stored);
+                if (exists) {
+                    currentCampaignId.value = stored;
+                } else if (campaigns.value.length > 0) {
+                    currentCampaignId.value = String(campaigns.value[0].id);
+                    localStorage.setItem('current_campaign_id', currentCampaignId.value);
+                } else {
+                    currentCampaignId.value = null;
+                }
+            } catch (e) {
+                console.error('Fehler beim Laden der Kampagnen:', e);
+            }
+        };
+
+        const switchCampaign = (id) => {
+            currentCampaignId.value = String(id);
+            localStorage.setItem('current_campaign_id', currentCampaignId.value);
+            showCampaignDropdown.value = false;
+            loadAll();
+        };
+
+        const openNewCampaignModal = () => {
+            newCampaignForm.value = { name: '', mode: 'empty', source_id: campaigns.value.length > 0 ? String(campaigns.value[0].id) : '' };
+            showNewCampaignModal.value = true;
+        };
+
+        const createCampaign = async () => {
+            if (creatingCampaign.value) return;
+            const name = (newCampaignForm.value.name || '').trim();
+            if (!name) { addToast('Bitte einen Namen eingeben', 'error'); return; }
+            creatingCampaign.value = true;
+            try {
+                const payload = { name, mode: newCampaignForm.value.mode };
+                if (newCampaignForm.value.mode === 'copy' && newCampaignForm.value.source_id) {
+                    payload.source_id = Number(newCampaignForm.value.source_id);
+                }
+                const res = await api.post(CONFIG.ENDPOINTS.campaigns, payload);
+                if (res.success && res.id) {
+                    addToast('Kampagne erstellt');
+                    showNewCampaignModal.value = false;
+                    await loadCampaigns();
+                    switchCampaign(res.id);
+                } else {
+                    addToast(res.error || 'Fehler beim Erstellen', 'error');
+                }
+            } catch (e) {
+                addToast('Fehler beim Erstellen der Kampagne', 'error');
+            } finally {
+                creatingCampaign.value = false;
+            }
+        };
+
+        const campaignStatusBadgeClass = Vue.computed(() => {
+            const s = currentCampaign.value?.status;
+            return CONFIG.CAMPAIGN_STATUS[s]?.class || 'running';
+        });
+
+        const campaignStatusBadgeLabel = Vue.computed(() => {
+            const s = currentCampaign.value?.status;
+            return CONFIG.CAMPAIGN_STATUS[s]?.label || s || '';
+        });
+
         // Form-bound settings mit zentralen Defaults
         const formSettings = Vue.ref({ ...CONFIG.DEFAULTS });
         const themes = Vue.ref(THEMES);
@@ -170,23 +258,21 @@ const DashboardPage = {
                 borders: parseBorders(sets.wheel_borders != null ? sets.wheel_borders : CONFIG.DEFAULTS.wheel_borders),
                 leadFields: parseLeadFields(sets.lead_fields != null ? sets.lead_fields : CONFIG.DEFAULTS.lead_fields)
             };
-            // autoRemoveBg bleibt lokal für das Segment-Modal, wird nicht mehr global gespeichert
         };
 
         const loadAll = async (syncForm = true) => {
+            if (!currentCampaignId.value) return;
             try {
                 const [statsData, segs, sets, leadsData] = await Promise.all([
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.stats),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings),
-                    api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads)
+                    api.get(withCampaign(CONFIG.ENDPOINTS.stats)),
+                    api.get(withCampaign(CONFIG.ENDPOINTS.segments)),
+                    api.get(withCampaign(CONFIG.ENDPOINTS.settings)),
+                    api.get(withCampaign(CONFIG.ENDPOINTS.leads))
                 ]);
                 stats.value = statsData;
                 segments.value = segs;
                 settings.value = sets;
                 leads.value = leadsData || [];
-                // Formular nur beim Erst-/Speicher-Load neu befuellen,
-                // damit z.B. Test-Drehung ungespeicherte Aenderungen nicht verwirft
                 if (syncForm) syncFormSettings();
             } catch (e) {
                 console.error('Fehler beim Laden:', e);
@@ -209,8 +295,6 @@ const DashboardPage = {
             return CONFIG.CAMPAIGN_STATUS[stats.value.campaign_status]?.label || stats.value.campaign_status;
         });
 
-        // campaignDate entfernt – Kampagnenstatus-KPI wurde entfernt
-
         const segmentStats = Vue.computed(() => stats.value.segment_stats || []);
         const hasUnlimited = Vue.computed(() => segmentStats.value.some(s => parseInt(s.unlimited) === 1));
 
@@ -229,7 +313,6 @@ const DashboardPage = {
             return n.toLocaleString('de-DE');
         };
 
-        // Drehverlauf formatieren (österreichische Zeit)
         const formatDateTime = (isoString) => {
             let dateStr = '';
             let timeStr = '';
@@ -274,7 +357,6 @@ const DashboardPage = {
                 };
             });
         });
-        // Alle vorkommenden Zusatzfeld-Spalten (Vereinigung über alle Leads)
         const leadExtraColumns = Vue.computed(() => {
             const keys = [];
             formattedLeads.value.forEach(l => {
@@ -283,12 +365,12 @@ const DashboardPage = {
             return keys;
         });
 
-        // Test spin
+        // Test spin — requires campaign_id + test=1
         const testSpin = async () => {
             if (testSpinning.value) return;
             testSpinning.value = true;
             try {
-                const result = await api.post(CONFIG.API_BASE + CONFIG.ENDPOINTS.spin + '?test=1');
+                const result = await api.post(withCampaign(CONFIG.ENDPOINTS.spin) + '&test=1');
                 if (result.error) {
                     addToast(result.error, 'error');
                     testSpinning.value = false;
@@ -312,12 +394,12 @@ const DashboardPage = {
             }
         };
 
-        // Campaign reset
+        // Campaign reset — DELETE /api/spin?campaign_id=
         const resetCampaign = async () => {
             if (resetting.value) return;
             resetting.value = true;
             try {
-                await api.post(CONFIG.API_BASE + '/campaign.php?action=reset', {});
+                await api.delete(withCampaign(CONFIG.ENDPOINTS.spin));
                 addToast('Kampagne zurückgesetzt', 'success');
                 showResetModal.value = false;
                 loadAll();
@@ -328,7 +410,6 @@ const DashboardPage = {
             }
         };
 
-        // Theme helpers for table display
         const getThemeImage = (themeKey) => {
             return SEGMENT_THEMES[themeKey]?.image || '';
         };
@@ -336,8 +417,6 @@ const DashboardPage = {
             return SEGMENT_THEMES[themeKey]?.name || themeKey || '';
         };
 
-        // Live-Branding-Vorschau: Hintergrund, Schrift & Akzent aus dem aktuell
-        // bearbeiteten (ungespeicherten) Formular – damit man sieht, was man ändert.
         const previewBrandStyle = Vue.computed(() => {
             const style = {
                 fontFamily: formSettings.value.font_family || 'Montserrat',
@@ -359,8 +438,6 @@ const DashboardPage = {
             return style;
         });
 
-
-        // Design-Tokens (Skin) für das Vorschaurad aus dem aktuellen Formular
         const previewSkin = Vue.computed(() => ({
             segment_fill_mode: formSettings.value.segment_fill_mode,
             rim_enabled: formSettings.value.rim_enabled,
@@ -395,7 +472,6 @@ const DashboardPage = {
             segment_palette: formSettings.value.segment_palette
         }));
 
-        // Stil des Spin-Buttons in der Vorschau
         const previewButtonStyle = Vue.computed(() => {
             const f = formSettings.value;
             const scale = parseFloat(f.button_size) || 1;
@@ -512,9 +588,12 @@ const DashboardPage = {
                     formData.append('existing_image', segmentForm.value.image);
                 }
 
-                const endpoint = editingSegment.value
-                    ? CONFIG.API_BASE + CONFIG.ENDPOINTS.segments + '?id=' + editingSegment.value
-                    : CONFIG.API_BASE + CONFIG.ENDPOINTS.segments;
+                // POST /api/segments?campaign_id=X  (create)
+                // POST /api/segments?campaign_id=X&id=Y  (update)
+                let endpoint = withCampaign(CONFIG.ENDPOINTS.segments);
+                if (editingSegment.value) {
+                    endpoint += '&id=' + editingSegment.value;
+                }
 
                 await api.postForm(endpoint, formData);
                 addToast(editingSegment.value ? 'Segment aktualisiert' : 'Segment erstellt');
@@ -530,7 +609,7 @@ const DashboardPage = {
         const deleteSegment = async (id) => {
             if (!confirm('Segment wirklich löschen?')) return;
             try {
-                await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments + '?id=' + id);
+                await api.delete(withCampaign(CONFIG.ENDPOINTS.segments) + '&id=' + id);
                 addToast('Segment gelöscht');
                 loadAll(false);
             } catch (e) {
@@ -574,13 +653,10 @@ const DashboardPage = {
             const fromIndex = draggedIndex.value;
             draggedIndex.value = null;
 
-            // Neue Reihenfolge der Tabelle berechnen
             const segs = [...segmentStats.value];
             const [moved] = segs.splice(fromIndex, 1);
             segs.splice(index, 0, moved);
 
-            // Optimistisch anzeigen: Tabelle UND Live-Vorschau (Rad) sofort umsortieren,
-            // damit sichtbar ist, was sich ändert – nicht erst nach dem Server-Reload.
             if (stats.value) stats.value.segment_stats = segs;
             const orderById = new Map(segs.map((s, i) => [s.id, i]));
             segments.value = [...segments.value].sort((a, b) =>
@@ -590,7 +666,7 @@ const DashboardPage = {
 
             const orders = segs.map((seg, i) => ({ id: seg.id, sort_order: i }));
             try {
-                await api.put(CONFIG.API_BASE + CONFIG.ENDPOINTS.segments, { orders });
+                await api.put(withCampaign(CONFIG.ENDPOINTS.segments), { orders });
                 addToast('Reihenfolge aktualisiert');
                 loadAll(false);
             } catch (e) {
@@ -612,11 +688,9 @@ const DashboardPage = {
             if (!file || !file.type || !file.type.startsWith('image/')) return;
             bgFile.value = file;
             formSettings.value.background_image = URL.createObjectURL(file);
-            // Ein hochgeladenes Bild überschreibt den Einfarbig-Modus
             formSettings.value.theme = 'custom';
             formSettings.value.background_mode = 'theme';
         };
-        // Theme-/Bildauswahl überschreibt ebenfalls den Einfarbig-Modus
         const selectTheme = (themeId) => {
             formSettings.value.theme = themeId;
             formSettings.value.background_mode = 'theme';
@@ -624,7 +698,7 @@ const DashboardPage = {
         const onBgChange = (event) => setBgFile(event.target.files[0]);
         const onBgDrop = (event) => { event.preventDefault(); setBgFile(event.dataTransfer.files[0]); };
 
-        // Save all
+        // Save all settings — PUT /api/settings?campaign_id=
         const saveAll = async () => {
             try {
                 const formData = new FormData();
@@ -648,7 +722,6 @@ const DashboardPage = {
                 formData.append('winner_email_subject', formSettings.value.winner_email_subject);
                 formData.append('winner_email_body', formSettings.value.winner_email_body);
                 formData.append('winner_email_sender', formSettings.value.winner_email_sender);
-                // Design-Tokens
                 formData.append('segment_fill_mode', formSettings.value.segment_fill_mode);
                 formData.append('rim_enabled', formSettings.value.rim_enabled === '0' ? '0' : '1');
                 formData.append('pointer_position', formSettings.value.pointer_position);
@@ -692,7 +765,7 @@ const DashboardPage = {
                 if (logoFile.value) formData.append('logo', logoFile.value);
                 if (bgFile.value) formData.append('background_image', bgFile.value);
 
-                await api.postForm(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings, formData);
+                await api.postForm(withCampaign(CONFIG.ENDPOINTS.settings), formData);
                 addToast('Einstellungen gespeichert');
                 logoFile.value = null;
                 bgFile.value = null;
@@ -702,14 +775,13 @@ const DashboardPage = {
             }
         };
 
-        // Eigenes Preset des Kunden speichern / wiederherstellen
         const hasSavedPreset = Vue.computed(() => !!(settings.value && settings.value.saved_preset));
         const savePreset = async () => {
             try {
                 const snapshot = JSON.stringify(formSettings.value);
                 const fd = new FormData();
                 fd.append('saved_preset', snapshot);
-                await api.postForm(CONFIG.API_BASE + CONFIG.ENDPOINTS.settings, fd);
+                await api.postForm(withCampaign(CONFIG.ENDPOINTS.settings), fd);
                 settings.value = Object.assign({}, settings.value, { saved_preset: snapshot });
                 addToast('Preset gespeichert');
             } catch (e) {
@@ -729,13 +801,20 @@ const DashboardPage = {
         };
 
         const goToWebsite = () => {
-            navigateTo('#/event');
+            // Navigate kiosk to the current campaign
+            const cid = currentCampaignId.value;
+            if (cid) {
+                window.location.href = window.location.pathname + '#/event?campaign_id=' + cid;
+                window.location.reload();
+            } else {
+                navigateTo('#/event');
+            }
         };
 
         const deleteLead = async (id) => {
             if (!confirm('Lead wirklich löschen?')) return;
             try {
-                await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.leads + '?id=' + id);
+                await api.delete(withCampaign(CONFIG.ENDPOINTS.leads) + '&id=' + id);
                 addToast('Lead gelöscht');
                 loadAll(false);
             } catch (e) {
@@ -768,7 +847,7 @@ const DashboardPage = {
                 .map(row => row.map(escapeCsv).join(','))
                 .join('\n');
 
-            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.href = url;
@@ -780,17 +859,15 @@ const DashboardPage = {
             addToast('CSV exportiert');
         };
 
-        // Export-Freischaltung (kostenpflichtiges Feature, vom Super-Admin aktiviert)
         const exportEnabled = Vue.computed(() =>
             settings.value && (settings.value.export_enabled === '1' || settings.value.export_enabled === 1)
         );
 
-        // Datei über authentifizierten Request herunterladen (xlsx/pdf via Backend)
+        // Authenticated file download — GET /api/export?campaign_id=X&type=...&format=...
         const downloadExport = async (type, format) => {
             try {
-                const res = await fetch(CONFIG.API_BASE + CONFIG.ENDPOINTS.export + '?type=' + type + '&format=' + format, {
-                    headers: getAuthHeaders()
-                });
+                const url = withCampaign(CONFIG.ENDPOINTS.export) + '&type=' + type + '&format=' + format;
+                const res = await fetch(url, { headers: getAuthHeaders() });
                 if (!res.ok) {
                     let msg = 'Export fehlgeschlagen';
                     try { const j = await res.json(); if (j.error) msg = j.error; } catch (e) {}
@@ -801,14 +878,14 @@ const DashboardPage = {
                 const cd = res.headers.get('Content-Disposition') || '';
                 const m = cd.match(/filename="?([^"]+)"?/);
                 const filename = m ? m[1] : (type + '.' + format);
-                const url = URL.createObjectURL(blob);
+                const objUrl = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = url;
+                link.href = objUrl;
                 link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                URL.revokeObjectURL(objUrl);
                 addToast((format === 'xlsx' ? 'Excel' : 'PDF') + ' exportiert');
             } catch (e) {
                 addToast('Export fehlgeschlagen', 'error');
@@ -839,7 +916,7 @@ const DashboardPage = {
                 return;
             }
             try {
-                const res = await api.put(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth, {
+                const res = await api.put(CONFIG.ENDPOINTS.auth.me, {
                     current_password: current,
                     new_password: newPw
                 });
@@ -856,7 +933,7 @@ const DashboardPage = {
 
         const logout = async () => {
             try {
-                await api.delete(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth);
+                await api.post(CONFIG.ENDPOINTS.auth.logout);
             } catch (e) {
                 console.error('Logout-Fehler:', e);
             } finally {
@@ -867,19 +944,22 @@ const DashboardPage = {
 
         let authRedirectTimer = null;
 
-        Vue.onMounted(() => {
-            checkAuth().then(res => {
-                isAuthenticated.value = res.authenticated;
-                user.value = res.user || {};
-                if (!res.authenticated) {
-                    authRedirectTimer = setTimeout(() => {
-                        if (!isAuthenticated.value) {
-                            navigateTo('#/login');
-                        }
-                    }, CONFIG.ANIMATION.auth_redirect_delay_ms);
-                }
-            });
-            loadAll();
+        Vue.onMounted(async () => {
+            const authRes = await checkAuth();
+            isAuthenticated.value = authRes.authenticated;
+            user.value = authRes.user || {};
+            if (!authRes.authenticated) {
+                authRedirectTimer = setTimeout(() => {
+                    if (!isAuthenticated.value) {
+                        navigateTo('#/login');
+                    }
+                }, CONFIG.ANIMATION.auth_redirect_delay_ms);
+                return;
+            }
+            await loadCampaigns();
+            if (currentCampaignId.value) {
+                loadAll();
+            }
         });
 
         Vue.onUnmounted(() => {
@@ -974,7 +1054,22 @@ const DashboardPage = {
             exportLeadsCSV,
             exportEnabled,
             exportLeads,
-            exportStats
+            exportStats,
+
+            // Campaign context
+            campaigns,
+            currentCampaignId,
+            currentCampaign,
+            showCampaignDropdown,
+            switchCampaign,
+            openNewCampaignModal,
+            showNewCampaignModal,
+            newCampaignForm,
+            createCampaign,
+            creatingCampaign,
+            campaignStatusBadgeClass,
+            campaignStatusBadgeLabel,
+            CONFIG
         };
     },
     template: '#dashboard-template'

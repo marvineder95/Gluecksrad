@@ -27,6 +27,8 @@ func (s *Server) routeSettings(r chi.Router) {
 	r.Group(func(pr chi.Router) {
 		pr.Use(s.requireAuth)
 		pr.Put("/api/settings", s.handlePutSettings)
+		// Frontend speichert per multipart-POST (FormData) — beide Methoden akzeptieren.
+		pr.Post("/api/settings", s.handlePutSettings)
 	})
 }
 

@@ -25,7 +25,29 @@ func (s *Server) routeLeads(r chi.Router) {
 	r.Group(func(pr chi.Router) {
 		pr.Use(s.requireAuth)
 		pr.Get("/api/leads", s.handleGetLeads)
+		pr.Delete("/api/leads", s.handleDeleteLead)
 	})
+}
+
+// handleDeleteLead löscht einen Lead (?id=) der aktuellen Kampagne.
+func (s *Server) handleDeleteLead(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r.Context())
+	campaignID, err := s.campaignFromRequest(r, user)
+	if err != nil {
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	}
+	id, _ := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
+	if id == 0 {
+		writeError(w, http.StatusBadRequest, "ID erforderlich")
+		return
+	}
+	res := s.DB.Where("id = ? AND campaign_id = ?", id, campaignID).Delete(&models.Lead{})
+	if res.Error != nil {
+		writeError(w, http.StatusInternalServerError, "Fehler beim Löschen")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
 // leadResponse ist die JSON-Struktur für einen Lead (GET /api/leads).

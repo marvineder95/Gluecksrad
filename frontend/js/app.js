@@ -25,7 +25,7 @@ const App = {
 
             if (needsAuth) {
                 try {
-                    const res = await api.get(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth);
+                    const res = await api.get(CONFIG.ENDPOINTS.auth.me);
                     isAuthenticated.value = res.authenticated;
                     userRole.value = res.user?.role || '';
                     if (!res.authenticated) {

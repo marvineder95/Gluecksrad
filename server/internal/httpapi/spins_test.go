@@ -145,7 +145,7 @@ type spinResp struct {
 // doSpin führt einen POST /api/spin über den echten Router aus.
 func (f *testFixture) doSpin(t *testing.T, query string, body any) (int, spinResp) {
 	t.Helper()
-	srv := New(f.db)
+	srv := New(f.db, "")
 	handler := srv.Router()
 
 	var buf bytes.Buffer
@@ -441,7 +441,7 @@ func TestDeleteSpin_ResetsCampaign(t *testing.T) {
 	}
 	t.Cleanup(func() { f.db.Exec(`DELETE FROM users WHERE id = ?`, admin.ID) })
 
-	srv := New(f.db)
+	srv := New(f.db, "")
 	handler := srv.Router()
 	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/spin?campaign_id=%d", f.campaignID), nil)
 	req.Header.Set("Authorization", "Bearer "+token)

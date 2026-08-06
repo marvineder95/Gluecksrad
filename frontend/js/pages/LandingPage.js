@@ -50,7 +50,7 @@ const LandingPage = {
             }
             isLoading.value = true;
             try {
-                const res = await api.post(CONFIG.API_BASE + CONFIG.ENDPOINTS.auth, {
+                const res = await api.post(CONFIG.ENDPOINTS.auth.login, {
                     email: email.value,
                     password: password.value
                 });

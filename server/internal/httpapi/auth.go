@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -101,6 +102,56 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 			"customer_id": user.CustomerID,
 		},
 	})
+}
+
+// PUT /api/auth/me — eigenes Passwort ändern {current_password, new_password}
+func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r.Context())
+	var body struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	if len(body.NewPassword) < 8 {
+		writeError(w, http.StatusBadRequest, "Neues Passwort muss mindestens 8 Zeichen haben")
+		return
+	}
+	if !verifyPassword(user.PasswordHash, body.CurrentPassword) {
+		writeError(w, http.StatusUnauthorized, "Aktuelles Passwort ist falsch")
+		return
+	}
+	hash, err := hashPassword(body.NewPassword)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Fehler beim Speichern")
+		return
+	}
+	s.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("password_hash", hash)
+	writeJSON(w, http.StatusOK, map[string]any{"success": true})
+}
+
+// PATCH /api/auth/me — eigene E-Mail ändern {email}
+func (s *Server) handleChangeEmail(w http.ResponseWriter, r *http.Request) {
+	user := userFromContext(r.Context())
+	var body struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	email := strings.TrimSpace(body.Email)
+	if _, err := mail.ParseAddress(email); err != nil {
+		writeError(w, http.StatusBadRequest, "Gültige E-Mail erforderlich")
+		return
+	}
+	if err := s.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("email", email).Error; err != nil {
+		writeError(w, http.StatusConflict, "E-Mail bereits vergeben")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"success": true})
 }
 
 // POST /api/auth/logout

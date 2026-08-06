@@ -10,11 +10,12 @@ import (
 
 // Server bündelt Abhängigkeiten für die Handler.
 type Server struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	StaticDir string
 }
 
-func New(db *gorm.DB) *Server {
-	return &Server{DB: db}
+func New(db *gorm.DB, staticDir string) *Server {
+	return &Server{DB: db, StaticDir: staticDir}
 }
 
 // Router baut den HTTP-Router mit allen Routen auf.
@@ -34,6 +35,8 @@ func (s *Server) Router() http.Handler {
 	r.Group(func(pr chi.Router) {
 		pr.Use(s.requireAuth)
 		pr.Get("/api/auth/me", s.handleMe)
+		pr.Put("/api/auth/me", s.handleChangePassword)
+		pr.Patch("/api/auth/me", s.handleChangeEmail)
 		pr.Post("/api/auth/logout", s.handleLogout)
 	})
 
@@ -49,6 +52,11 @@ func (s *Server) Router() http.Handler {
 	s.routeCustomers(r)
 	s.routeUsers(r)
 	s.routeCampaigns(r)
+
+	// Statisches Frontend (SPA-Fallback) — alles außer /api/*.
+	if s.StaticDir != "" {
+		r.Handle("/*", StaticHandler(s.StaticDir))
+	}
 
 	return r
 }

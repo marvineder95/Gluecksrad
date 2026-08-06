@@ -9,6 +9,7 @@ type Config struct {
 	DatabaseURL string
 	Port        string
 	Env         string // "dev" | "prod"
+	StaticDir   string // Wurzel der statischen Frontend-Dateien (index.html, frontend/, ...)
 }
 
 func getenv(key, def string) string {
@@ -26,5 +27,7 @@ func Load() Config {
 			"host=localhost port=5433 user=gluecksrad password=dev_password dbname=gluecksrad sslmode=disable"),
 		Port: getenv("PORT", "8090"),
 		Env:  getenv("APP_ENV", "dev"),
+		// Default: Repo-Wurzel relativ zum `server/`-Arbeitsverzeichnis (go run ./cmd/api).
+		StaticDir: getenv("STATIC_DIR", ".."),
 	}
 }
