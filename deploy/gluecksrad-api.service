@@ -1,0 +1,24 @@
+# systemd-Unit für die Go-API. Ablegen unter /etc/systemd/system/gluecksrad-api.service
+# Danach: sudo systemctl daemon-reload && sudo systemctl enable --now gluecksrad-api
+[Unit]
+Description=Gluecksrad Go API
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+# WorkingDirectory = Repo-Wurzel: Uploads landen unter ./uploads, statische Dateien liegen hier.
+WorkingDirectory=/var/www/gluecksrad
+EnvironmentFile=/etc/gluecksrad/api.env
+ExecStart=/var/www/gluecksrad/server/bin/api
+Restart=on-failure
+RestartSec=3
+# Härtung
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
