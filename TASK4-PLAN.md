@@ -117,10 +117,19 @@ Przy pełnych kampaniach trzeba rozdzielić, co jest **per-kampania**, a co **pe
 
 ---
 
-## 8. Fix PWA
-- `manifest.json`: `start_url` na ekran kiosku/parowania (np. `/#/kiosk`) zamiast `/` (landing).
-- Ewentualnie osobny, minimalny `manifest` dla kiosku (orientacja, pełny ekran).
-- Podbicie `CACHE_NAME` w `sw.js` przy wdrożeniu.
+## 8. PWA — DWIE osobne PWA ze wspólnego kodu (ustalone 2026-08-06)
+Jeden `manifest` ma jeden `start_url`/`display`/`orientation`, a kiosk i dashboard się różnią.
+Rozwiązanie: **dwa punkty wejścia HTML** dzielące ten sam frontend JS (monorepo, bez rozbijania repo).
+Dynamiczna podmiana `<link rel=manifest>` odpada (przeglądarka zamraża manifest przy instalacji).
+
+- **`index.html`** → dashboard + landing + login. Linkuje **`manifest-admin.json`**:
+  `display: standalone`, `start_url: /#/dashboard`, nazwa „Glücksrad Admin", własna ikona.
+  **Instalowalna** (świadoma decyzja: „app‑feeling" na telefonie admina).
+- **`kiosk.html`** → wchodzi od razu w tryb kiosku/parowania (QR + kod). Linkuje **`manifest-kiosk.json`**:
+  `display: fullscreen`, **`orientation: any`** (elastyczna — nie ograniczamy sprzętu), nazwa „Glücksrad Kiosk", własna ikona.
+  To jest jednocześnie fix „złego `start_url`" (dziś `manifest.json` → `/` = landing).
+- **Service Worker:** każdy punkt wejścia ma właściwy scope; wspólny `sw.js` OK, ale osobne `CACHE_NAME`/ścieżki startowe. Podbijać `CACHE_NAME` przy wdrożeniach.
+- Ten krok wchodzi w **Fazę 2** razem z parowaniem — `kiosk.html` = ekran parowania.
 
 ---
 
